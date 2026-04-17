@@ -109,7 +109,14 @@ class LevelScene extends Phaser.Scene {
     this.doors = [];
     
     // Create particle emitters for effects
-    this.fireParticles = this.add.particles(0xff6b6b);
+    // Create fire particle texture
+    const fireGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    fireGfx.fillStyle(0xff6b6b, 1);
+    fireGfx.fillCircle(4, 4, 4);
+    fireGfx.generateTexture('fireParticleTex', 8, 8);
+    fireGfx.destroy();
+    
+    this.fireParticles = this.add.particles('fireParticleTex');
     this.fireParticles.createEmitter({
       speed: { min: -200, max: 200 },
       angle: { min: 240, max: 300 },
@@ -118,7 +125,14 @@ class LevelScene extends Phaser.Scene {
       gravityY: -300
     });
     
-    this.waterParticles = this.add.particles(0x4ecdc4);
+    // Create water particle texture
+    const waterGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    waterGfx.fillStyle(0x4ecdc4, 1);
+    waterGfx.fillCircle(4, 4, 4);
+    waterGfx.generateTexture('waterParticleTex', 8, 8);
+    waterGfx.destroy();
+    
+    this.waterParticles = this.add.particles('waterParticleTex');
     this.waterParticles.createEmitter({
       speed: { min: -200, max: 200 },
       angle: { min: 240, max: 300 },
