@@ -1,9 +1,15 @@
-// Fireboy & Watergirl Game - Phaser 3
+// Fireboy & Watergirl Game - Phaser 3 with Sprites
 console.log('Game script loading...');
 
 class MenuScene extends Phaser.Scene {
   constructor() {
     super({ key: 'MenuScene' });
+  }
+
+  preload() {
+    // Preload assets
+    this.load.image('fireboy-idle', 'fireboy.png');
+    this.load.image('watergirl-idle', 'watergirl.png');
   }
 
   create() {
@@ -84,6 +90,16 @@ class LevelScene extends Phaser.Scene {
     super({ key: 'LevelScene' });
   }
 
+  preload() {
+    // Preload sprite assets
+    this.load.image('fireboy-idle', 'fireboy.png');
+    this.load.image('watergirl-idle', 'watergirl.png');
+    this.load.image('fireboy-jump', 'fireboy-jump.png');
+    this.load.image('watergirl-jump', 'watergirl-jump.png');
+    this.load.spritesheet('fireboy-walk', 'fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('watergirl-walk', 'watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
+  }
+
   create() {
     console.log('LevelScene created');
     this.cameras.main.setBackgroundColor('#1a1a1a');
@@ -91,6 +107,25 @@ class LevelScene extends Phaser.Scene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = [];
     this.doors = [];
+    
+    // Create particle emitters for effects
+    this.fireParticles = this.add.particles(0xff6b6b);
+    this.fireParticles.createEmitter({
+      speed: { min: -200, max: 200 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 1, end: 0 },
+      lifespan: 600,
+      gravityY: -300
+    });
+    
+    this.waterParticles = this.add.particles(0x4ecdc4);
+    this.waterParticles.createEmitter({
+      speed: { min: -200, max: 200 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 1, end: 0 },
+      lifespan: 600,
+      gravityY: -300
+    });
     
     // Create platforms
     const platform = this.add.rectangle(400, 550, 800, 50, 0x8b4513);
@@ -128,22 +163,47 @@ class LevelScene extends Phaser.Scene {
     waterDoor.doorType = 'water';
     this.doors.push(waterDoor);
     
-    // Create players
-    this.fireboy = this.add.rectangle(100, 400, 32, 32, 0xff6b6b);
+    // Create players with sprites
+    this.fireboy = this.add.sprite(100, 400, 'fireboy-idle');
+    this.fireboy.setScale(1);
     this.physics.add.existing(this.fireboy);
     this.fireboy.body.setBounce(0.2);
     this.fireboy.body.setCollideWorldBounds(true);
     this.fireboy.type = 'fireboy';
     this.fireboy.isAlive = true;
     this.fireboy.atDoor = false;
+    this.fireboy.isMoving = false;
+    this.fireboy.isJumping = false;
     
-    this.watergirl = this.add.rectangle(700, 400, 32, 32, 0x4ecdc4);
+    this.watergirl = this.add.sprite(700, 400, 'watergirl-idle');
+    this.watergirl.setScale(1);
     this.physics.add.existing(this.watergirl);
     this.watergirl.body.setBounce(0.2);
     this.watergirl.body.setCollideWorldBounds(true);
     this.watergirl.type = 'watergirl';
     this.watergirl.isAlive = true;
     this.watergirl.atDoor = false;
+    this.watergirl.isMoving = false;
+    this.watergirl.isJumping = false;
+    
+    // Create animations
+    if (!this.anims.exists('fireboy-walk-anim')) {
+      this.anims.create({
+        key: 'fireboy-walk-anim',
+        frames: this.anims.generateFrameNumbers('fireboy-walk', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
+    
+    if (!this.anims.exists('watergirl-walk-anim')) {
+      this.anims.create({
+        key: 'watergirl-walk-anim',
+        frames: this.anims.generateFrameNumbers('watergirl-walk', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
     
     // Setup collisions with platforms
     this.physics.add.collider(this.fireboy, this.platforms);
@@ -217,26 +277,74 @@ class LevelScene extends Phaser.Scene {
     
     // Fireboy movement
     this.fireboy.body.setVelocityX(0);
+    let fireboyMoving = false;
+    
     if (this.fireboy.keys.left.isDown) {
       this.fireboy.body.setVelocityX(-200);
+      fireboyMoving = true;
+      this.fireboy.setFlipX(true);
     } else if (this.fireboy.keys.right.isDown) {
       this.fireboy.body.setVelocityX(200);
+      fireboyMoving = true;
+      this.fireboy.setFlipX(false);
+    }
+    
+    // Update Fireboy sprite
+    if (this.fireboy.body.touching.down) {
+      if (fireboyMoving && !this.fireboy.isMoving) {
+        this.fireboy.play('fireboy-walk-anim');
+        this.fireboy.isMoving = true;
+      } else if (!fireboyMoving && this.fireboy.isMoving) {
+        this.fireboy.stop();
+        this.fireboy.setTexture('fireboy-idle');
+        this.fireboy.isMoving = false;
+      }
     }
     
     if (this.fireboy.keys.up.isDown && this.fireboy.body.touching.down) {
       this.fireboy.body.setVelocityY(-400);
+      this.fireboy.setTexture('fireboy-jump');
+      this.fireboy.isJumping = true;
+      // Emit fire particles on jump
+      this.fireParticles.emitParticleAt(this.fireboy.x, this.fireboy.y + 20, 5);
+    } else if (this.fireboy.isJumping && this.fireboy.body.touching.down) {
+      this.fireboy.isJumping = false;
     }
     
     // Watergirl movement
     this.watergirl.body.setVelocityX(0);
+    let watergirMoving = false;
+    
     if (this.watergirl.keys.left.isDown) {
       this.watergirl.body.setVelocityX(-200);
+      watergirMoving = true;
+      this.watergirl.setFlipX(true);
     } else if (this.watergirl.keys.right.isDown) {
       this.watergirl.body.setVelocityX(200);
+      watergirMoving = true;
+      this.watergirl.setFlipX(false);
+    }
+    
+    // Update Watergirl sprite
+    if (this.watergirl.body.touching.down) {
+      if (watergirMoving && !this.watergirl.isMoving) {
+        this.watergirl.play('watergirl-walk-anim');
+        this.watergirl.isMoving = true;
+      } else if (!watergirMoving && this.watergirl.isMoving) {
+        this.watergirl.stop();
+        this.watergirl.setTexture('watergirl-idle');
+        this.watergirl.isMoving = false;
+      }
     }
     
     if (this.watergirl.keys.up.isDown && this.watergirl.body.touching.down) {
       this.watergirl.body.setVelocityY(-400);
+      this.watergirl.setTexture('watergirl-jump');
+      this.watergirl.isJumping = true;
+      // Emit water particles on jump
+      this.waterParticles.emitParticleAt(this.watergirl.x, this.watergirl.y + 20, 5);
+    } else if (this.watergirl.isJumping && this.watergirl.body.touching.down) {
+      this.watergirl.isJumping = false;
     }
     
     // Check win condition
