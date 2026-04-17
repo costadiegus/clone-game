@@ -1,0 +1,21 @@
+{
+  "name": "fireboy-watergirl-clone",
+  "version": "1.0.0",
+  "description": "A clone of the Fireboy & Watergirl game using Phaser.js",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "http-server . -p 8080 -o",
+    "dev": "live-server --port=8080 --open=./index.html"
+  },
+  "dependencies": {
+    "phaser": "^3.55.2"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  },
+  "keywords": ["game", "phaser", "clone", "fireboy", "watergirl"],
+  "author": "",
+  "license": "MIT"
+}
