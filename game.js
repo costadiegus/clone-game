@@ -8,8 +8,8 @@ class MenuScene extends Phaser.Scene {
 
   preload() {
     // Preload assets
-    this.load.image('fireboy-idle', 'fireboy.png');
-    this.load.image('watergirl-idle', 'watergirl.png');
+    this.load.image('fireboy-idle', 'assets/fireboy.png');
+    this.load.image('watergirl-idle', 'assets/watergirl.png');
   }
 
   create() {
@@ -85,6 +85,94 @@ class MenuScene extends Phaser.Scene {
   }
 }
 
+class GameOverScene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'GameOverScene' });
+  }
+
+  init(data) {
+    this.playerDied = data.playerDied || 'Unknown';
+  }
+
+  create() {
+    console.log('GameOverScene created - Player died:', this.playerDied);
+    const { width, height } = this.cameras.main;
+    this.cameras.main.setBackgroundColor('#1a1a1a');
+    
+    // Game Over title
+    this.add.text(width / 2, 80, 'GAME OVER', {
+      fontSize: '64px',
+      fontStyle: 'bold',
+      fill: '#ff6b6b',
+      align: 'center'
+    }).setOrigin(0.5);
+    
+    // Death message
+    let deathMessage = '';
+    let deathColor = '#ff6b6b';
+    
+    if (this.playerDied === 'fireboy') {
+      deathMessage = 'Fireboy fell into a hazard!';
+      deathColor = '#ff6b6b';
+    } else if (this.playerDied === 'watergirl') {
+      deathMessage = 'Watergirl fell into a hazard!';
+      deathColor = '#4ecdc4';
+    }
+    
+    this.add.text(width / 2, 180, deathMessage, {
+      fontSize: '32px',
+      fill: deathColor,
+      align: 'center'
+    }).setOrigin(0.5);
+    
+    // Restart button
+    const restartButton = this.add.rectangle(width / 2 - 120, height / 2 + 80, 180, 60, 0x27ae60);
+    restartButton.setInteractive({ useHandCursor: true });
+    
+    restartButton.on('pointerover', () => {
+      restartButton.setFillStyle(0x229954);
+    });
+    
+    restartButton.on('pointerout', () => {
+      restartButton.setFillStyle(0x27ae60);
+    });
+    
+    restartButton.on('pointerdown', () => {
+      console.log('Restart button clicked');
+      this.scene.start('LevelScene');
+    });
+    
+    this.add.text(width / 2 - 120, height / 2 + 80, 'RESTART', {
+      fontSize: '20px',
+      fontStyle: 'bold',
+      fill: '#fff'
+    }).setOrigin(0.5);
+    
+    // Menu button
+    const menuButton = this.add.rectangle(width / 2 + 120, height / 2 + 80, 180, 60, 0x2980b9);
+    menuButton.setInteractive({ useHandCursor: true });
+    
+    menuButton.on('pointerover', () => {
+      menuButton.setFillStyle(0x1f618d);
+    });
+    
+    menuButton.on('pointerout', () => {
+      menuButton.setFillStyle(0x2980b9);
+    });
+    
+    menuButton.on('pointerdown', () => {
+      console.log('Menu button clicked');
+      this.scene.start('MenuScene');
+    });
+    
+    this.add.text(width / 2 + 120, height / 2 + 80, 'MENU', {
+      fontSize: '20px',
+      fontStyle: 'bold',
+      fill: '#fff'
+    }).setOrigin(0.5);
+  }
+}
+
 class LevelScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LevelScene' });
@@ -92,12 +180,12 @@ class LevelScene extends Phaser.Scene {
 
   preload() {
     // Preload sprite assets
-    this.load.image('fireboy-idle', 'fireboy.png');
-    this.load.image('watergirl-idle', 'watergirl.png');
-    this.load.image('fireboy-jump', 'fireboy-jump.png');
-    this.load.image('watergirl-jump', 'watergirl-jump.png');
-    this.load.spritesheet('fireboy-walk', 'fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('watergirl-walk', 'watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.image('fireboy-idle', 'assets/fireboy.png');
+    this.load.image('watergirl-idle', 'assets/watergirl.png');
+    this.load.image('fireboy-jump', 'assets/fireboy-jump.png');
+    this.load.image('watergirl-jump', 'assets/watergirl-jump.png');
+    this.load.spritesheet('fireboy-walk', 'assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('watergirl-walk', 'assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
   }
 
   create() {
@@ -108,15 +196,14 @@ class LevelScene extends Phaser.Scene {
     this.hazards = [];
     this.doors = [];
     
-    // Create particle emitters for effects
-    // Create fire particle texture
+    // Create particle emitters for effects (used for jumps and hazards) with simple circle textures
     const fireGfx = this.make.graphics({ x: 0, y: 0, add: false });
     fireGfx.fillStyle(0xff6b6b, 1);
     fireGfx.fillCircle(4, 4, 4);
     fireGfx.generateTexture('fireParticleTex', 8, 8);
     fireGfx.destroy();
     
-    this.fireParticles = this.add.particles('fireParticleTex');
+    this.fireParticles = this.add.particles('fireParticleTex');    
     this.fireParticles.createEmitter({
       speed: { min: -200, max: 200 },
       angle: { min: 240, max: 300 },
@@ -125,14 +212,14 @@ class LevelScene extends Phaser.Scene {
       gravityY: -300
     });
     
-    // Create water particle texture
+    // Create water particles for Watergirl's jump and water hazards with simple circle textures
     const waterGfx = this.make.graphics({ x: 0, y: 0, add: false });
     waterGfx.fillStyle(0x4ecdc4, 1);
     waterGfx.fillCircle(4, 4, 4);
     waterGfx.generateTexture('waterParticleTex', 8, 8);
     waterGfx.destroy();
     
-    this.waterParticles = this.add.particles('waterParticleTex');
+    this.waterParticles = this.add.particles('waterParticleTex');    
     this.waterParticles.createEmitter({
       speed: { min: -200, max: 200 },
       angle: { min: 240, max: 300 },
@@ -228,14 +315,16 @@ class LevelScene extends Phaser.Scene {
       this.physics.add.overlap(this.fireboy, hazard, () => {
         if (hazard.hazardType !== 'lava') {
           console.log('Fireboy hit hazard:', hazard.hazardType);
-          this.scene.restart();
+          this.fireboy.isAlive = false;
+          this.scene.start('GameOverScene', { playerDied: 'fireboy' });
         }
       });
       
       this.physics.add.overlap(this.watergirl, hazard, () => {
         if (hazard.hazardType !== 'water') {
           console.log('Watergirl hit hazard:', hazard.hazardType);
-          this.scene.restart();
+          this.watergirl.isAlive = false;
+          this.scene.start('GameOverScene', { playerDied: 'watergirl' });
         }
       });
     });
@@ -364,23 +453,13 @@ class LevelScene extends Phaser.Scene {
     // Check win condition
     if (this.fireboy.atDoor && this.watergirl.atDoor) {
       this.levelComplete = true;
-      console.log('LEVEL COMPLETE!');
-      
-      const text = this.add.text(400, 300, 'LEVEL COMPLETE!', {
+      this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
         fontSize: '48px',
         fontStyle: 'bold',
         fill: '#00ff00',
         align: 'center'
       }).setOrigin(0.5);
-      
-      this.time.delayedCall(2000, () => {
-        this.scene.start('MenuScene');
-      });
     }
-    
-    // Reset door flags
-    this.fireboy.atDoor = false;
-    this.watergirl.atDoor = false;
   }
 }
 
@@ -392,36 +471,27 @@ class EditorScene extends Phaser.Scene {
   create() {
     console.log('EditorScene created');
     const { width, height } = this.cameras.main;
-    this.cameras.main.setBackgroundColor('#1a1a1a');
+    this.cameras.main.setBackgroundColor('#2c3e50');
     
-    this.add.text(width / 2, 20, 'Level Editor (Coming Soon)', {
+    this.add.text(width / 2, height / 2, 'Level Editor - Coming Soon!', {
       fontSize: '32px',
-      fontStyle: 'bold',
       fill: '#fff',
       align: 'center'
     }).setOrigin(0.5);
     
-    const backButton = this.add.rectangle(width / 2, height - 40, 150, 40, 0xe74c3c);
-    backButton.setInteractive({ useHandCursor: true });
-    
-    backButton.on('pointerover', () => backButton.setFillStyle(0xc0392b));
-    backButton.on('pointerout', () => backButton.setFillStyle(0xe74c3c));
-    backButton.on('pointerdown', () => {
-      console.log('Back button clicked');
-      this.scene.start('MenuScene');
-    });
-    
-    this.add.text(width / 2, height - 40, 'BACK TO MENU', {
-      fontSize: '14px',
-      fontStyle: 'bold',
-      fill: '#fff'
+    this.add.text(width / 2, height / 2 + 60, 'Press ESC to return to menu', {
+      fontSize: '16px',
+      fill: '#bdc3c7',
+      align: 'center'
     }).setOrigin(0.5);
     
-    this.input.keyboard.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.input.keyboard.on('keydown-ESC', () => {
+      this.scene.start('MenuScene');
+    });
   }
 }
 
-// Game configuration
+// Initialize Phaser game
 const config = {
   type: Phaser.AUTO,
   width: 800,
@@ -430,10 +500,14 @@ const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 300 },
-      debug: false,
-    },
+      debug: false
+    }
   },
-  scene: [MenuScene, LevelScene, EditorScene],
+  scene: [MenuScene, LevelScene, GameOverScene, EditorScene],
+  render: {
+    pixelArt: true,
+    antialias: false
+  },
   parent: 'game-container',
   input: {
     keyboard: true,
@@ -443,7 +517,8 @@ const config = {
 };
 
 console.log('Creating game with config:', config);
-window.game = new Phaser.Game(config);
+const game = new Phaser.Game(config);
+window.game = game;
 console.log('Game created successfully!');
 
 // Add global error handler
