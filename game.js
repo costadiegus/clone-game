@@ -186,6 +186,8 @@ class LevelScene extends Phaser.Scene {
     this.load.image('watergirl-jump', 'assets/watergirl-jump.png');
     this.load.spritesheet('fireboy-walk', 'assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('watergirl-walk', 'assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.image('door-red', 'assets/door-red.png');
+    this.load.image('door-blue', 'assets/door-blue.png');
   }
 
   create() {
@@ -254,18 +256,18 @@ class LevelScene extends Phaser.Scene {
     this.hazards.push(water);
     
     // Doors
-    const fireDoor = this.add.rectangle(150, 350, 30, 50, 0xff6b6b);
+    const fireDoor = this.add.sprite(150, 350, 'door-red');
     this.physics.add.existing(fireDoor, true);
     fireDoor.doorType = 'fire';
     this.doors.push(fireDoor);
     
-    const waterDoor = this.add.rectangle(650, 350, 30, 50, 0x4ecdc4);
+    const waterDoor = this.add.sprite(650, 350, 'door-blue');
     this.physics.add.existing(waterDoor, true);
     waterDoor.doorType = 'water';
     this.doors.push(waterDoor);
     
     // Create players with sprites
-    this.fireboy = this.add.sprite(100, 400, 'fireboy-idle');
+    this.fireboy = this.add.sprite(50, 420, 'fireboy-idle');
     this.fireboy.setScale(1);
     this.physics.add.existing(this.fireboy);
     this.fireboy.body.setBounce(0.2);
@@ -276,7 +278,7 @@ class LevelScene extends Phaser.Scene {
     this.fireboy.isMoving = false;
     this.fireboy.isJumping = false;
     
-    this.watergirl = this.add.sprite(700, 400, 'watergirl-idle');
+    this.watergirl = this.add.sprite(750, 420, 'watergirl-idle');
     this.watergirl.setScale(1);
     this.physics.add.existing(this.watergirl);
     this.watergirl.body.setBounce(0.2);

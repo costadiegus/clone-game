@@ -7,6 +7,11 @@ export default class LevelScene extends Phaser.Scene {
     this.levelNumber = data.levelNumber || 1;
   }
 
+  preload() {
+    this.load.image('door-red', 'assets/door-red.png');
+    this.load.image('door-blue', 'assets/door-blue.png');
+  }
+
   create() {
     this.cameras.main.setBackgroundColor('#1a1a1a');
     
@@ -18,15 +23,15 @@ export default class LevelScene extends Phaser.Scene {
     // Create level
     this.createLevel();
     
-    // Create players
-    this.fireboy = this.add.rectangle(100, 400, 32, 32, 0xff6b6b);
+    // Create players far from doors
+    this.fireboy = this.add.rectangle(50, 420, 32, 32, 0xff6b6b);
     this.physics.add.existing(this.fireboy);
     this.fireboy.body.setBounce(0.2);
     this.fireboy.body.setCollideWorldBounds(true);
     this.fireboy.type = 'fireboy';
     this.fireboy.isAlive = true;
     
-    this.watergirl = this.add.rectangle(700, 400, 32, 32, 0x4ecdc4);
+    this.watergirl = this.add.rectangle(750, 420, 32, 32, 0x4ecdc4);
     this.physics.add.existing(this.watergirl);
     this.watergirl.body.setBounce(0.2);
     this.watergirl.body.setCollideWorldBounds(true);
@@ -108,12 +113,12 @@ export default class LevelScene extends Phaser.Scene {
     this.hazards.add(water);
     
     // Doors
-    const fireDoor = this.add.rectangle(150, 350, 30, 50, 0xff6b6b);
+    const fireDoor = this.add.sprite(250, 350, 'door-red');
     this.physics.add.existing(fireDoor, true);
     fireDoor.doorType = 'fire';
     this.doors.add(fireDoor);
     
-    const waterDoor = this.add.rectangle(650, 350, 30, 50, 0x4ecdc4);
+    const waterDoor = this.add.sprite(450, 350, 'door-blue');
     this.physics.add.existing(waterDoor, true);
     waterDoor.doorType = 'water';
     this.doors.add(waterDoor);
