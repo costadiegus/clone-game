@@ -247,12 +247,21 @@ class LevelScene extends Phaser.Scene {
     this.physics.add.existing(platform4, true);
     this.platforms.add(platform4);
     
-    const toxic = this.add.rectangle(400, 278, 140, 24, 0x27ae60);
+    const toxic = this.add.rectangle(400, 289, 140, 1, 0x27ae60);
     this.physics.add.existing(toxic, true);
     toxic.hazardType = 'toxic';
     toxic.setDepth(2);
     toxic.setStrokeStyle(2, 0x1abc9c);
     this.hazards.push(toxic);
+    
+    // Create slime effect for toxic hazard
+    this.toxicSlime = this.add.graphics();
+    this.toxicSlime.x = toxic.x;
+    this.toxicSlime.y = toxic.y;
+    this.toxicSlime.setDepth(3);
+    
+    // Store toxic reference for animation
+    this.toxicRect = toxic;
     
     // Lava
     const lava = this.add.rectangle(150, 525, 100, 1, 0xff4500);
@@ -565,6 +574,50 @@ class LevelScene extends Phaser.Scene {
         this.waterWave.fillStyle(0xffffff, 0.4);
         this.waterWave.fillCircle(x, y, 3);
       }
+    }
+    
+    // Animate slime effect for toxic hazard
+    if (this.toxicSlime && this.toxicRect) {
+      this.toxicSlime.clear();
+      const time = this.time.now * 0.008;
+      const width = this.toxicRect.width;
+      const height = this.toxicRect.height;
+      
+      // Draw base slime layer with slight pulsing
+      const baseAlpha = 0.4 + Math.sin(time * 0.5) * 0.1;
+      this.toxicSlime.fillStyle(0x2ecc71, baseAlpha);
+      this.toxicSlime.fillRect(-width/2, -height/2, width, height);
+      
+      // Draw slime bubbles/oozes
+      const bubbleCount = 6;
+      for (let i = 0; i < bubbleCount; i++) {
+        const x = -width/2 + (i + 0.5) * (width / bubbleCount) + Math.sin(time + i * 0.7) * 5;
+        const y = -height/2 + Math.cos(time + i * 0.5) * 3;
+        const radius = 3 + Math.sin(time * 2 + i * 0.3) * 2;
+        const alpha = 0.6 + Math.sin(time + i * 0.4) * 0.2;
+        
+        this.toxicSlime.fillStyle(0x27ae60, alpha);
+        this.toxicSlime.fillCircle(x, y, radius);
+        
+        // Add highlight
+        this.toxicSlime.fillStyle(0x4ecdc4, alpha * 0.7);
+        this.toxicSlime.fillCircle(x - 1, y - 1, radius * 0.5);
+      }
+      
+      // Draw wavy top surface
+      this.toxicSlime.lineStyle(2, 0x1abc9c, 0.8);
+      this.toxicSlime.beginPath();
+      const wavePoints = 10;
+      for (let i = 0; i <= wavePoints; i++) {
+        const x = -width/2 + i * (width / wavePoints);
+        const y = -height/2 + Math.sin(time + i * 0.8) * 2;
+        if (i === 0) {
+          this.toxicSlime.moveTo(x, y);
+        } else {
+          this.toxicSlime.lineTo(x, y);
+        }
+      }
+      this.toxicSlime.strokePath();
     }
     
     // Check win condition
