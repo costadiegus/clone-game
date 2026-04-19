@@ -525,7 +525,7 @@ class LevelScene extends Phaser.Scene {
       const width = this.waterBody.width;
       const height = this.waterBody.height;
       const segmentCount = 5;
-      const waveHeight = 6;
+      const waveHeight = 2;
       const waveHeightEllipse = 8;
       const waveY = -height / 2 + waveHeightEllipse / 2 -5;
 
@@ -534,11 +534,11 @@ class LevelScene extends Phaser.Scene {
         const y = waveY + Math.sin(time + i * 0.9) * waveHeight;
         const waveWidth = width / 3;
 
-        this.waterWave.fillStyle(0xffffff, 0.5);
+        this.waterWave.fillStyle(0x6d9be0, 0.5);
         this.waterWave.fillEllipse(x, y, waveWidth, waveHeightEllipse);
       }
 
-      this.waterWave.lineStyle(2, 0x90d5ff, 0.7);
+      this.waterWave.lineStyle(2, 0x6d9be0, 0.7);
       this.waterWave.beginPath();
       for (let i = 0; i <= segmentCount; i++) {
         const x = -width / 2 + i * (width / segmentCount);
@@ -554,8 +554,8 @@ class LevelScene extends Phaser.Scene {
       for (let i = 0; i < segmentCount; i += 2) {
         const x = -width / 2 + 16 + i * (width / segmentCount);
         const y = waveY + Math.sin(time + i * 0.9) * waveHeight - 10;
-        this.waterWave.fillStyle(0xffffff, 0.4);
-        this.waterWave.fillCircle(x, y, 3);
+        this.waterWave.fillStyle(0x6d9be0, 0.4);
+        this.waterWave.fillCircle(x, y, 1);
       }
     }
     
