@@ -230,8 +230,23 @@ class LevelScene extends Phaser.Scene {
       gravityY: -300
     });
     
-    // Create platforms
-    const platform = this.add.rectangle(400, 550, 800, 50, 0x8b4513);
+    // Create floor texture for bottom ground
+    const stoneGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    stoneGfx.fillStyle(0x555555, 1);
+    stoneGfx.fillRect(0, 0, 40, 40);
+    stoneGfx.fillStyle(0x6e6e6e, 1);
+    stoneGfx.fillRect(2, 4, 12, 10);
+    stoneGfx.fillRect(26, 4, 10, 8);
+    stoneGfx.fillRect(10, 20, 20, 10);
+    stoneGfx.fillStyle(0x444444, 1);
+    stoneGfx.fillRect(0, 28, 8, 8);
+    stoneGfx.fillRect(30, 24, 8, 10);
+    stoneGfx.lineStyle(2, 0x2e2e2e, 1);
+    stoneGfx.strokeRect(0, 0, 40, 40);
+    stoneGfx.generateTexture('stoneBlockTex', 40, 40);
+    stoneGfx.destroy();
+
+    const platform = this.add.tileSprite(400, 550, 800, 50, 'stoneBlockTex');
     this.physics.add.existing(platform, true);
     this.platforms.add(platform);
     
