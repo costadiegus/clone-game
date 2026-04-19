@@ -118,13 +118,28 @@ export default class LevelScene extends Phaser.Scene {
     waterDoor.doorType = 'water';
     this.doors.add(waterDoor);
     
+    // Lava hazard
+    const lava = this.add.rectangle(150, 510, 100, 30, 0xff4500);
+    this.physics.add.existing(lava, true);
+    lava.hazardType = 'lava';
+    this.hazards.add(lava);
+
     // Create lava flame effect using a simple animated sprite
     this.lavaFlame = this.add.graphics();
     this.lavaFlame.x = 150;
-    this.lavaFlame.y = 485;
-    
-    // Store lava reference for animation
+    this.lavaFlame.y = 510;
     this.lavaRect = lava;
+
+    // Water hazard
+    const water = this.add.rectangle(650, 510, 100, 30, 0x0099ff);
+    this.physics.add.existing(water, true);
+    water.hazardType = 'water';
+    this.hazards.add(water);
+    this.waterBody = water;
+    this.waterWave = this.add.graphics();
+    this.waterWave.x = water.x;
+    this.waterWave.y = water.y;
+    this.waterWave.setDepth(10);
   }
 
   setupInput() {
@@ -203,6 +218,50 @@ export default class LevelScene extends Phaser.Scene {
           this.lavaFlame.fillStyle(0xffff00, alpha * 0.7);
           this.lavaFlame.fillRect(x + 1, -height - 3, 6, 3);
         }
+      }
+    }
+
+    // Animate water wave effect
+    if (this.waterWave && this.waterBody) {
+      this.waterWave.clear();
+      const time = this.time.now * 0.02;
+      const width = this.waterBody.width;
+      const height = this.waterBody.height;
+      const segmentCount = 5;
+      const waveHeight = 6;
+      const waveY = -height / 2 + 10;
+
+      // Draw the main wave crests relative to the water body
+      for (let i = 0; i < segmentCount; i++) {
+        const x = -width / 2 + 16 + i * (width / segmentCount);
+        const y = waveY + Math.sin(time + i * 0.9) * waveHeight;
+        const waveWidth = width / 3;
+        const waveHeightEllipse = 10;
+
+        this.waterWave.fillStyle(0xffffff, 0.5);
+        this.waterWave.fillEllipse(x, y, waveWidth, waveHeightEllipse);
+      }
+
+      // Surface line across the top of the water
+      this.waterWave.lineStyle(2, 0x90d5ff, 0.7);
+      this.waterWave.beginPath();
+      for (let i = 0; i <= segmentCount; i++) {
+        const x = -width / 2 + i * (width / segmentCount);
+        const y = waveY + Math.sin(time + i * 0.9) * waveHeight;
+        if (i === 0) {
+          this.waterWave.moveTo(x, y);
+        } else {
+          this.waterWave.lineTo(x, y);
+        }
+      }
+      this.waterWave.strokePath();
+
+      // Foam dots
+      for (let i = 0; i < segmentCount; i += 2) {
+        const x = -width / 2 + 16 + i * (width / segmentCount);
+        const y = waveY + Math.sin(time + i * 0.9) * waveHeight - 6;
+        this.waterWave.fillStyle(0xffffff, 0.4);
+        this.waterWave.fillCircle(x, y, 3);
       }
     }
   }

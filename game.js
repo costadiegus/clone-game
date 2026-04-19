@@ -258,10 +258,15 @@ class LevelScene extends Phaser.Scene {
     this.lavaRect = lava;
     
     // Water
-    const water = this.add.rectangle(650, 510, 100, 30, 0x0099ff);
+    const water = this.add.rectangle(650, 525, 100, 1, 0x0099ff);
     this.physics.add.existing(water, true);
     water.hazardType = 'water';
     this.hazards.push(water);
+    this.waterBody = water;
+    this.waterWave = this.add.graphics();
+    this.waterWave.x = water.x;
+    this.waterWave.y = water.y;
+    this.waterWave.setDepth(10);
     
     // Doors
     const fireDoor = this.add.sprite(200, 440, 'door-red').setOrigin(0.5, 1);
@@ -507,6 +512,47 @@ class LevelScene extends Phaser.Scene {
           this.lavaFlame.fillStyle(0xffff00, alpha * 0.7);
           this.lavaFlame.fillRect(x + 1, -height - 3, 6, 3);
         }
+      }
+    }
+
+    // Animate water wave effect
+    if (this.waterWave && this.waterBody) {
+      this.waterWave.clear();
+      const time = this.time.now * 0.02;
+      const width = this.waterBody.width;
+      const height = this.waterBody.height;
+      const segmentCount = 5;
+      const waveHeight = 6;
+      const waveHeightEllipse = 8;
+      const waveY = -height / 2 + waveHeightEllipse / 2 -5;
+
+      for (let i = 0; i < segmentCount; i++) {
+        const x = -width / 2 + 16 + i * (width / segmentCount);
+        const y = waveY + Math.sin(time + i * 0.9) * waveHeight;
+        const waveWidth = width / 3;
+
+        this.waterWave.fillStyle(0xffffff, 0.5);
+        this.waterWave.fillEllipse(x, y, waveWidth, waveHeightEllipse);
+      }
+
+      this.waterWave.lineStyle(2, 0x90d5ff, 0.7);
+      this.waterWave.beginPath();
+      for (let i = 0; i <= segmentCount; i++) {
+        const x = -width / 2 + i * (width / segmentCount);
+        const y = waveY + Math.sin(time + i * 0.9) * waveHeight - waveHeightEllipse / 2 + 2;
+        if (i === 0) {
+          this.waterWave.moveTo(x, y);
+        } else {
+          this.waterWave.lineTo(x, y);
+        }
+      }
+      this.waterWave.strokePath();
+
+      for (let i = 0; i < segmentCount; i += 2) {
+        const x = -width / 2 + 16 + i * (width / segmentCount);
+        const y = waveY + Math.sin(time + i * 0.9) * waveHeight - 10;
+        this.waterWave.fillStyle(0xffffff, 0.4);
+        this.waterWave.fillCircle(x, y, 3);
       }
     }
     
