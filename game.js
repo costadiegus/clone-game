@@ -623,12 +623,13 @@ class LevelScene extends Phaser.Scene {
     // Check win condition
     if (this.fireboy.atDoor && this.watergirl.atDoor) {
       this.levelComplete = true;
-      this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
+      const levelCompleteText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
         fontSize: '48px',
         fontStyle: 'bold',
         fill: '#00ff00',
         align: 'center'
       }).setOrigin(0.5);
+      levelCompleteText.setDepth(100);
     }
   }
 }
