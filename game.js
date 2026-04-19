@@ -525,7 +525,43 @@ class LevelScene extends Phaser.Scene {
   }
 
   showLevelCompleteText() {
-    const levelCompleteText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
+    const camWidth = this.cameras.main.width;
+    const camHeight = this.cameras.main.height;
+
+    const overlay = this.add.rectangle(
+      camWidth / 2,
+      camHeight / 2,
+      camWidth,
+      camHeight,
+      0x000000,
+      0.0
+    ).setDepth(90);
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0.45,
+      duration: 400,
+      ease: 'Quad.easeOut'
+    });
+
+    const blurOverlay = this.add.graphics().setDepth(91);
+    const tileSize = 24;
+    for (let y = 0; y < camHeight; y += tileSize) {
+      for (let x = 0; x < camWidth; x += tileSize) {
+        blurOverlay.fillStyle(0x000000, 0.9 + ((x + y) % (tileSize * 2) ? 0 : 0.02));
+        blurOverlay.fillRect(x, y, tileSize, tileSize);
+      }
+    }
+    blurOverlay.setAlpha(0);
+    blurOverlay.setBlendMode(Phaser.BlendModes.NORMAL);
+    this.tweens.add({
+      targets: blurOverlay,
+      alpha: 0.75,
+      duration: 400,
+      ease: 'Quad.easeOut'
+    });
+
+    const levelCompleteText = this.add.text(camWidth / 2, camHeight / 2, 'LEVEL COMPLETE!', {
       fontSize: '48px',
       fontStyle: 'bold',
       fill: '#00ff00',
