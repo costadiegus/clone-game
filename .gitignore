@@ -13,4 +13,4 @@ coverage/**
 *.sln
 *.sw?
 
-**/resources/**
+**/_old/**
