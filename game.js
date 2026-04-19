@@ -242,6 +242,17 @@ class LevelScene extends Phaser.Scene {
     const platform3 = this.add.rectangle(600, 400, 150, 20, 0x8b4513);
     this.physics.add.existing(platform3, true);
     this.platforms.add(platform3);
+
+    const platform4 = this.add.rectangle(400, 300, 180, 20, 0x8b4513);
+    this.physics.add.existing(platform4, true);
+    this.platforms.add(platform4);
+    
+    const toxic = this.add.rectangle(400, 278, 140, 24, 0x27ae60);
+    this.physics.add.existing(toxic, true);
+    toxic.hazardType = 'toxic';
+    toxic.setDepth(2);
+    toxic.setStrokeStyle(2, 0x1abc9c);
+    this.hazards.push(toxic);
     
     // Lava
     const lava = this.add.rectangle(150, 525, 100, 1, 0xff4500);
@@ -518,7 +529,7 @@ class LevelScene extends Phaser.Scene {
     // Animate water wave effect
     if (this.waterWave && this.waterBody) {
       this.waterWave.clear();
-      const time = this.time.now * 0.02;
+      const time = this.time.now * 0.01;
       const width = this.waterBody.width;
       const height = this.waterBody.height;
       const segmentCount = 5;

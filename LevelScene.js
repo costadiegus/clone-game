@@ -106,7 +106,19 @@ export default class LevelScene extends Phaser.Scene {
     const platform3 = this.add.rectangle(600, 400, 150, 20, 0x8b4513);
     this.physics.add.existing(platform3, true);
     this.platforms.add(platform3);
-    
+
+    // New upper platform with toxic hazard on top
+    const platform4 = this.add.rectangle(400, 300, 180, 20, 0x8b4513);
+    this.physics.add.existing(platform4, true);
+    this.platforms.add(platform4);
+
+    const toxic = this.add.rectangle(400, 286, 140, 24, 0x2ecc71);
+    this.physics.add.existing(toxic, true);
+    toxic.hazardType = 'toxic';
+    toxic.setDepth(2);
+    toxic.setStrokeStyle(2, 0x1abc9c);
+    this.hazards.add(toxic);
+
     // Doors
     const fireDoor = this.add.sprite(200, 440, 'door-red').setOrigin(0.5, 1);
     this.physics.add.existing(fireDoor, true);
