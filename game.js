@@ -194,6 +194,24 @@ class LevelScene extends Phaser.Scene {
     console.log('LevelScene created');
     this.cameras.main.setBackgroundColor('#1a1a1a');
     
+    const wallGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    wallGfx.fillStyle(0x3a3a3a, 1);
+    wallGfx.fillRect(0, 0, 80, 80);
+    wallGfx.fillStyle(0x4a4a4a, 1);
+    for (let row = 0; row < 4; row++) {
+      const y = row * 20;
+      const offset = (row % 2) * 20;
+      for (let col = 0; col < 2; col++) {
+        const x = col * 40 + offset;
+        wallGfx.fillRect(x + 2, y + 4, 36, 12);
+        wallGfx.lineStyle(2, 0x333333, 1);
+        wallGfx.strokeRect(x + 2, y + 4, 36, 12);
+      }
+    }
+    wallGfx.generateTexture('stoneWallTex', 80, 80);
+    wallGfx.destroy();
+    this.add.tileSprite(400, 300, 800, 600, 'stoneWallTex').setDepth(-2);
+    
     this.platforms = this.physics.add.staticGroup();
     this.hazards = [];
     this.doors = [];
