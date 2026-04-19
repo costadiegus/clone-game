@@ -404,12 +404,19 @@ class LevelScene extends Phaser.Scene {
         this.fireboy.setTexture('fireboy-idle');
         this.fireboy.isMoving = false;
       }
+    } else if (this.fireboy.isMoving) {
+      this.fireboy.stop();
+      this.fireboy.isMoving = false;
     }
     
     if (this.fireboy.keys.up.isDown && this.fireboy.body.touching.down) {
       this.fireboy.body.setVelocityY(-400);
       this.fireboy.setTexture('fireboy-jump');
       this.fireboy.isJumping = true;
+      if (this.fireboy.isMoving) {
+        this.fireboy.stop();
+        this.fireboy.isMoving = false;
+      }
       // Emit fire particles on jump
       this.fireParticles.emitParticleAt(this.fireboy.x, this.fireboy.y + 20, 5);
     } else if (this.fireboy.isJumping && this.fireboy.body.touching.down) {
@@ -443,12 +450,19 @@ class LevelScene extends Phaser.Scene {
         this.watergirl.setTexture('watergirl-idle');
         this.watergirl.isMoving = false;
       }
+    } else if (this.watergirl.isMoving) {
+      this.watergirl.stop();
+      this.watergirl.isMoving = false;
     }
     
     if (this.watergirl.keys.up.isDown && this.watergirl.body.touching.down) {
       this.watergirl.body.setVelocityY(-400);
       this.watergirl.setTexture('watergirl-jump');
       this.watergirl.isJumping = true;
+      if (this.watergirl.isMoving) {
+        this.watergirl.stop();
+        this.watergirl.isMoving = false;
+      }
       // Emit water particles on jump
       this.waterParticles.emitParticleAt(this.watergirl.x, this.watergirl.y + 20, 5);
     } else if (this.watergirl.isJumping && this.watergirl.body.touching.down) {
