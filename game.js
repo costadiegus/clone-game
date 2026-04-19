@@ -520,7 +520,7 @@ class LevelScene extends Phaser.Scene {
       // Create multiple flame tongues
       for (let i = 0; i < 8; i++) {
         const x = (i - 4) * 12;
-        const height = 15 + Math.sin(time + i * 0.5) * 8;
+        const height = 8 + Math.sin(time + i * 0.5) * 4;
         const alpha = 0.6 + Math.sin(time + i * 0.3) * 0.2;
         
         // Base flame (red)
@@ -528,9 +528,9 @@ class LevelScene extends Phaser.Scene {
         this.lavaFlame.fillRect(x, -height, 8, height);
         
         // Yellow tips
-        if (height > 18) {
+        if (height > 10) {
           this.lavaFlame.fillStyle(0xffff00, alpha * 0.7);
-          this.lavaFlame.fillRect(x + 1, -height - 3, 6, 3);
+          this.lavaFlame.fillRect(x + 1, -height - 2, 6, 2);
         }
       }
     }
