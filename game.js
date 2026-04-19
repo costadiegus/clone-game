@@ -244,13 +244,21 @@ class LevelScene extends Phaser.Scene {
     this.platforms.add(platform3);
     
     // Lava
-    const lava = this.add.rectangle(150, 500, 100, 30, 0xff4500);
+    const lava = this.add.rectangle(150, 525, 100, 1, 0xff4500);
     this.physics.add.existing(lava, true);
     lava.hazardType = 'lava';
     this.hazards.push(lava);
     
+    // Create lava flame effect
+    this.lavaFlame = this.add.graphics();
+    this.lavaFlame.x = 150;
+    this.lavaFlame.y = 525;
+    
+    // Store lava reference for animation
+    this.lavaRect = lava;
+    
     // Water
-    const water = this.add.rectangle(650, 500, 100, 30, 0x0099ff);
+    const water = this.add.rectangle(650, 510, 100, 30, 0x0099ff);
     this.physics.add.existing(water, true);
     water.hazardType = 'water';
     this.hazards.push(water);
@@ -469,6 +477,36 @@ class LevelScene extends Phaser.Scene {
       this.watergirl.isJumping = false;
       if (!watergirMoving) {
         this.watergirl.setTexture('watergirl-idle');
+      }
+    }
+    
+    // Animate lava for flame effect
+    if (this.lavaRect) {
+      const time = this.time.now * 0.01;
+      const alpha = 0.7 + Math.sin(time) * 0.3;
+      this.lavaRect.setAlpha(alpha);
+    }
+    
+    // Animate flame graphics
+    if (this.lavaFlame) {
+      this.lavaFlame.clear();
+      const time = this.time.now * 0.01;
+      
+      // Create multiple flame tongues
+      for (let i = 0; i < 8; i++) {
+        const x = (i - 4) * 12;
+        const height = 15 + Math.sin(time + i * 0.5) * 8;
+        const alpha = 0.6 + Math.sin(time + i * 0.3) * 0.2;
+        
+        // Base flame (red)
+        this.lavaFlame.fillStyle(0xff4500, alpha);
+        this.lavaFlame.fillRect(x, -height, 8, height);
+        
+        // Yellow tips
+        if (height > 18) {
+          this.lavaFlame.fillStyle(0xffff00, alpha * 0.7);
+          this.lavaFlame.fillRect(x + 1, -height - 3, 6, 3);
+        }
       }
     }
     

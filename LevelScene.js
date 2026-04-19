@@ -10,6 +10,13 @@ export default class LevelScene extends Phaser.Scene {
   preload() {
     this.load.image('door-red', 'assets/door-red.png');
     this.load.image('door-blue', 'assets/door-blue.png');
+    
+    // Create lava particle texture (simplified for graphics)
+    const lavaGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    lavaGfx.fillStyle(0xffa500, 1);
+    lavaGfx.fillCircle(4, 4, 4);
+    lavaGfx.generateTexture('lavaParticleTex', 8, 8);
+    lavaGfx.destroy();
   }
 
   create() {
@@ -100,18 +107,6 @@ export default class LevelScene extends Phaser.Scene {
     this.physics.add.existing(platform3, true);
     this.platforms.add(platform3);
     
-    // Lava
-    const lava = this.add.rectangle(150, 500, 100, 30, 0xff4500);
-    this.physics.add.existing(lava, true);
-    lava.hazardType = 'lava';
-    this.hazards.add(lava);
-    
-    // Water
-    const water = this.add.rectangle(650, 500, 100, 30, 0x0099ff);
-    this.physics.add.existing(water, true);
-    water.hazardType = 'water';
-    this.hazards.add(water);
-    
     // Doors
     const fireDoor = this.add.sprite(200, 440, 'door-red').setOrigin(0.5, 1);
     this.physics.add.existing(fireDoor, true);
@@ -122,6 +117,14 @@ export default class LevelScene extends Phaser.Scene {
     this.physics.add.existing(waterDoor, true);
     waterDoor.doorType = 'water';
     this.doors.add(waterDoor);
+    
+    // Create lava flame effect using a simple animated sprite
+    this.lavaFlame = this.add.graphics();
+    this.lavaFlame.x = 150;
+    this.lavaFlame.y = 485;
+    
+    // Store lava reference for animation
+    this.lavaRect = lava;
   }
 
   setupInput() {
@@ -172,6 +175,36 @@ export default class LevelScene extends Phaser.Scene {
     
     this.fireboy.atDoor = false;
     this.watergirl.atDoor = false;
+    
+    // Animate lava for flame effect - simple pulsing
+    if (this.lavaRect) {
+      const time = this.time.now * 0.01;
+      const alpha = 0.7 + Math.sin(time) * 0.3;
+      this.lavaRect.setAlpha(alpha);
+    }
+    
+    // Animate flame graphics
+    if (this.lavaFlame) {
+      this.lavaFlame.clear();
+      const time = this.time.now * 0.01;
+      
+      // Create multiple flame tongues
+      for (let i = 0; i < 8; i++) {
+        const x = (i - 4) * 12;
+        const height = 15 + Math.sin(time + i * 0.5) * 8;
+        const alpha = 0.6 + Math.sin(time + i * 0.3) * 0.2;
+        
+        // Base flame (red)
+        this.lavaFlame.fillStyle(0xff4500, alpha);
+        this.lavaFlame.fillRect(x, -height, 8, height);
+        
+        // Yellow tips
+        if (height > 18) {
+          this.lavaFlame.fillStyle(0xffff00, alpha * 0.7);
+          this.lavaFlame.fillRect(x + 1, -height - 3, 6, 3);
+        }
+      }
+    }
   }
 
   levelComplete() {
