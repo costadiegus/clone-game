@@ -413,12 +413,12 @@ class LevelScene extends Phaser.Scene {
     this.add.text(10, 10, 'Level 1: Forest Temple', {
       fontSize: '16px',
       fill: '#fff'
-    });
+    }).setDepth(95);
     
     this.add.text(10, 30, 'ESC: Back to Menu', {
       fontSize: '12px',
       fill: '#aaa'
-    });
+    }).setDepth(95);
     
     this.input.keyboard.on('keydown-ESC', () => {
       console.log('ESC pressed, returning to menu');
