@@ -325,11 +325,13 @@ class LevelScene extends Phaser.Scene {
     const fireDoor = this.add.sprite(200, 440, 'door-red').setOrigin(0.5, 1);
     this.physics.add.existing(fireDoor, true);
     fireDoor.doorType = 'fire';
+    this.fireDoor = fireDoor;
     this.doors.push(fireDoor);
     
     const waterDoor = this.add.sprite(600, 390, 'door-blue').setOrigin(0.5, 1);
     this.physics.add.existing(waterDoor, true);
     waterDoor.doorType = 'water';
+    this.waterDoor = waterDoor;
     this.doors.push(waterDoor);
     
     // Create players with sprites
@@ -424,6 +426,112 @@ class LevelScene extends Phaser.Scene {
     });
     
     this.levelComplete = false;
+    this.levelCompleteAnimating = false;
+  }
+
+  startLevelCompleteSequence() {
+    this.fireboy.body.setVelocity(0);
+    this.watergirl.body.setVelocity(0);
+    this.fireboy.body.allowGravity = false;
+    this.watergirl.body.allowGravity = false;
+
+    this.fireboy.play('fireboy-walk-anim');
+    this.watergirl.play('watergirl-walk-anim');
+    this.fireboy.setFlipX(this.fireDoor.x < this.fireboy.x);
+    this.watergirl.setFlipX(this.waterDoor.x < this.watergirl.x);
+
+    const fireDoorEffect = this.add.graphics({ x: this.fireDoor.x, y: this.fireDoor.y - this.fireDoor.height / 2 });
+    fireDoorEffect.lineStyle(2, 0x333333, 0.2);
+    fireDoorEffect.strokeRect(-this.fireDoor.width / 2, -this.fireDoor.height / 2, this.fireDoor.width, this.fireDoor.height);
+    for (let i = 1; i < 3; i++) {
+      const offset = i * this.fireDoor.width * 0.2;
+      fireDoorEffect.lineBetween(-this.fireDoor.width / 2 + offset, -this.fireDoor.height / 2, -this.fireDoor.width / 2 + offset, this.fireDoor.height / 2);
+      fireDoorEffect.lineBetween(-this.fireDoor.width / 2, -this.fireDoor.height / 2 + offset * 0.6, this.fireDoor.width / 2, -this.fireDoor.height / 2 + offset * 0.6);
+    }
+    fireDoorEffect.setAlpha(0);
+    fireDoorEffect.setDepth(this.fireDoor.depth + 1);
+
+    const waterDoorEffect = this.add.graphics({ x: this.waterDoor.x, y: this.waterDoor.y - this.waterDoor.height / 2 });
+    waterDoorEffect.lineStyle(2, 0x333333, 0.2);
+    waterDoorEffect.strokeRect(-this.waterDoor.width / 2, -this.waterDoor.height / 2, this.waterDoor.width, this.waterDoor.height);
+    for (let i = 1; i < 3; i++) {
+      const offset = i * this.waterDoor.width * 0.2;
+      waterDoorEffect.lineBetween(-this.waterDoor.width / 2 + offset, -this.waterDoor.height / 2, -this.waterDoor.width / 2 + offset, this.waterDoor.height / 2);
+      waterDoorEffect.lineBetween(-this.waterDoor.width / 2, -this.waterDoor.height / 2 + offset * 0.6, this.waterDoor.width / 2, -this.waterDoor.height / 2 + offset * 0.6);
+    }
+    waterDoorEffect.setAlpha(0);
+    waterDoorEffect.setDepth(this.waterDoor.depth + 1);
+
+    const fireTargetY = this.fireDoor.y - this.fireDoor.height * 0.7;
+    const waterTargetY = this.waterDoor.y - this.waterDoor.height * 0.7;
+
+    let completeCount = 0;
+    const finishTween = () => {
+      completeCount += 1;
+      if (completeCount === 2) {
+        this.showLevelCompleteText();
+      }
+    };
+
+    this.tweens.add({
+      targets: fireDoorEffect,
+      alpha: 0.9,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      duration: 300,
+      yoyo: true,
+      ease: 'Quad.easeInOut'
+    });
+
+    this.tweens.add({
+      targets: waterDoorEffect,
+      alpha: 0.9,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      duration: 300,
+      yoyo: true,
+      ease: 'Quad.easeInOut'
+    });
+
+    this.tweens.add({
+      targets: this.fireboy,
+      x: this.fireDoor.x,
+      y: fireTargetY,
+      alpha: 0.2,
+      scaleX: 0.45,
+      scaleY: 0.45,
+      duration: 700,
+      ease: 'Power2',
+      onComplete: () => {
+        this.fireboy.setVisible(false);
+        finishTween();
+      }
+    });
+
+    this.tweens.add({
+      targets: this.watergirl,
+      x: this.waterDoor.x,
+      y: waterTargetY,
+      alpha: 0.2,
+      scaleX: 0.45,
+      scaleY: 0.45,
+      duration: 700,
+      ease: 'Power2',
+      onComplete: () => {
+        this.watergirl.setVisible(false);
+        finishTween();
+      }
+    });
+  }
+
+  showLevelCompleteText() {
+    const levelCompleteText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
+      fontSize: '48px',
+      fontStyle: 'bold',
+      fill: '#00ff00',
+      align: 'center'
+    }).setOrigin(0.5);
+    levelCompleteText.setDepth(100);
   }
 
   update() {
@@ -649,15 +757,10 @@ class LevelScene extends Phaser.Scene {
       }
     });
     
-    if (fireboyAtRedDoor && watergirlAtBlueDoor) {
+    if (fireboyAtRedDoor && watergirlAtBlueDoor && !this.levelCompleteAnimating) {
+      this.levelCompleteAnimating = true;
+      this.startLevelCompleteSequence();
       this.levelComplete = true;
-      const levelCompleteText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
-        fontSize: '48px',
-        fontStyle: 'bold',
-        fill: '#00ff00',
-        align: 'center'
-      }).setOrigin(0.5);
-      levelCompleteText.setDepth(100);
     }
   }
 }
