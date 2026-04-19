@@ -414,6 +414,9 @@ class LevelScene extends Phaser.Scene {
       this.fireParticles.emitParticleAt(this.fireboy.x, this.fireboy.y + 20, 5);
     } else if (this.fireboy.isJumping && this.fireboy.body.touching.down) {
       this.fireboy.isJumping = false;
+      if (!fireboyMoving) {
+        this.fireboy.setTexture('fireboy-idle');
+      }
     }
     
     // Watergirl movement
@@ -450,6 +453,9 @@ class LevelScene extends Phaser.Scene {
       this.waterParticles.emitParticleAt(this.watergirl.x, this.watergirl.y + 20, 5);
     } else if (this.watergirl.isJumping && this.watergirl.body.touching.down) {
       this.watergirl.isJumping = false;
+      if (!watergirMoving) {
+        this.watergirl.setTexture('watergirl-idle');
+      }
     }
     
     // Check win condition
