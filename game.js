@@ -256,12 +256,12 @@ class LevelScene extends Phaser.Scene {
     this.hazards.push(water);
     
     // Doors
-    const fireDoor = this.add.sprite(150, 350, 'door-red');
+    const fireDoor = this.add.sprite(200, 440, 'door-red').setOrigin(0.5, 1);
     this.physics.add.existing(fireDoor, true);
     fireDoor.doorType = 'fire';
     this.doors.push(fireDoor);
     
-    const waterDoor = this.add.sprite(650, 350, 'door-blue');
+    const waterDoor = this.add.sprite(600, 390, 'door-blue').setOrigin(0.5, 1);
     this.physics.add.existing(waterDoor, true);
     waterDoor.doorType = 'water';
     this.doors.push(waterDoor);
