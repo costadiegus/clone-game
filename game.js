@@ -307,7 +307,6 @@ class LevelScene extends Phaser.Scene {
     this.fireboy.body.setCollideWorldBounds(true);
     this.fireboy.type = 'fireboy';
     this.fireboy.isAlive = true;
-    this.fireboy.atDoor = false;
     this.fireboy.isMoving = false;
     this.fireboy.isJumping = false;
     
@@ -318,7 +317,6 @@ class LevelScene extends Phaser.Scene {
     this.watergirl.body.setCollideWorldBounds(true);
     this.watergirl.type = 'watergirl';
     this.watergirl.isAlive = true;
-    this.watergirl.atDoor = false;
     this.watergirl.isMoving = false;
     this.watergirl.isJumping = false;
     
@@ -360,21 +358,6 @@ class LevelScene extends Phaser.Scene {
           console.log('Watergirl hit hazard:', hazard.hazardType);
           this.watergirl.isAlive = false;
           this.scene.start('GameOverScene', { playerDied: 'watergirl' });
-        }
-      });
-    });
-    
-    // Setup door collisions
-    this.doors.forEach(door => {
-      this.physics.add.overlap(this.fireboy, door, () => {
-        if (door.doorType === 'fire') {
-          this.fireboy.atDoor = true;
-        }
-      });
-      
-      this.physics.add.overlap(this.watergirl, door, () => {
-        if (door.doorType === 'water') {
-          this.watergirl.atDoor = true;
         }
       });
     });
@@ -621,7 +604,19 @@ class LevelScene extends Phaser.Scene {
     }
     
     // Check win condition
-    if (this.fireboy.atDoor && this.watergirl.atDoor) {
+    let fireboyAtRedDoor = false;
+    let watergirlAtBlueDoor = false;
+    
+    this.doors.forEach(door => {
+      if (door.doorType === 'fire' && this.physics.overlap(this.fireboy, door)) {
+        fireboyAtRedDoor = true;
+      }
+      if (door.doorType === 'water' && this.physics.overlap(this.watergirl, door)) {
+        watergirlAtBlueDoor = true;
+      }
+    });
+    
+    if (fireboyAtRedDoor && watergirlAtBlueDoor) {
       this.levelComplete = true;
       const levelCompleteText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'LEVEL COMPLETE!', {
         fontSize: '48px',
