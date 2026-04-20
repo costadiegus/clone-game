@@ -1,7 +1,9 @@
+
+import PreloadScene from './scenes/PreloadScene.js';
+import SplashScene from './scenes/SplashScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import LevelScene from './scenes/LevelScene.js';
 import EditorScene from './scenes/EditorScene.js';
-import BootScene from './scenes/BootScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 import PauseScene from './scenes/PauseScene.js';
 import AudioManager from './game/AudioManager.js';
@@ -19,7 +21,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, LevelScene, EditorScene, GameOverScene, PauseScene],
+  scene: [PreloadScene, SplashScene, MenuScene, LevelScene, EditorScene, GameOverScene, PauseScene],
   parent: 'game-container',
 };
 
