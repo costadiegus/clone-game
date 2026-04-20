@@ -358,7 +358,8 @@ class MenuScene extends Phaser.Scene {
 
     editorButton.on('pointerdown', () => {
       audio.playSfx('click');
-      this.scene.start('EditorScene');
+      this.scene.launch('EditorScene');
+      this.scene.pause();
     });
 
     this.add.text(width / 2, 340, 'EDITOR', {
@@ -476,6 +477,9 @@ class GameOverScene extends Phaser.Scene {
 
     menuButton.on('pointerdown', () => {
       audio.playSfx('click');
+      //this.scene.start('MenuScene');
+      this.scene.stop();
+      this.scene.stop('LevelScene');
       this.scene.start('MenuScene');
     });
 
@@ -676,7 +680,9 @@ class LevelScene extends Phaser.Scene {
           this.fireboy.isAlive = false;
           audio.playSfx('death');
           audio.stopAllMusicImmediate();
-          this.scene.start('GameOverScene', { playerDied: 'fireboy' });
+          //this.scene.start('GameOverScene', { playerDied: 'fireboy' });
+          this.scene.launch('GameOverScene', { playerDied: 'fireboy' });
+          this.scene.pause();
         }
       });
       
@@ -685,7 +691,9 @@ class LevelScene extends Phaser.Scene {
           this.watergirl.isAlive = false;
           audio.playSfx('death');
           audio.stopAllMusicImmediate();
-          this.scene.start('GameOverScene', { playerDied: 'watergirl' });
+          //this.scene.start('GameOverScene', { playerDied: 'watergirl' });
+          this.scene.launch('GameOverScene', { playerDied: 'watergirl' });
+          this.scene.pause();
         }
       });
     });
@@ -1119,7 +1127,8 @@ class EditorScene extends Phaser.Scene {
     }).setOrigin(0.5);
     
     this.input.keyboard.on('keydown-ESC', () => {
-      this.scene.start('MenuScene');
+      this.scene.stop();
+      this.scene.resume('MenuScene');
     });
   }
 }
