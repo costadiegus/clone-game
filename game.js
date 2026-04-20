@@ -10,9 +10,40 @@ class MenuScene extends Phaser.Scene {
     // Preload assets
     this.load.image('fireboy-idle', 'assets/fireboy.png');
     this.load.image('watergirl-idle', 'assets/watergirl.png');
+    this.load.audio('backgroundMusic', 'assets/background-music.mp3');
   }
 
   create() {
+    this.sound.stopAll();
+    
+    // 1. Preparamos a música, mas não damos play ainda
+    this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
+
+    // 2. Criamos uma "capa" transparente para detectar o primeiro clique
+    const startOverlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7).setDepth(1000);
+    const startText = this.add.text(400, 300, 'CLIQUE PARA COMEÇAR', { 
+        fontSize: '32px', 
+        fill: '#fff' 
+    }).setOrigin(0.5).setDepth(1001);
+
+    // 3. Ao clicar em qualquer lugar da tela pela primeira vez:
+    this.input.once('pointerdown', () => {
+        // Destruímos a capa
+        startOverlay.destroy();
+        startText.destroy();
+
+        // Agora o áudio está desbloqueado pelo navegador!
+        if (!this.backgroundMusic.isPlaying) {
+            this.backgroundMusic.play();
+            this.backgroundMusic.volume = 0;
+            this.tweens.add({
+                targets: this.backgroundMusic,
+                volume: 0.5,
+                duration: 2000
+            });
+        }
+    });
+
     console.log('MenuScene created');
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#2c3e50');
@@ -187,17 +218,30 @@ class LevelScene extends Phaser.Scene {
     this.load.spritesheet('fireboy-walk', 'assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('watergirl-walk', 'assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
     this.load.image('door-red', 'assets/door-red.png');
-    this.load.image('door-blue', 'assets/door-blue.png');
-    this.load.audio('backgroundMusic', 'assets/background-music.mp3');
+    this.load.image('door-blue', 'assets/door-blue.png');    
+    this.load.audio('gameOverMusic', 'assets/game-over-music.mp3');
+    this.load.audio('levelSceneMusic', 'assets/level-scene-music.mp3');
   }
 
   create() {
+    // Para qualquer som que esteja tocando antes de começar o nível
+    this.sound.stopAll();
+
     console.log('LevelScene created');
     this.cameras.main.setBackgroundColor('#1a1a1a');
     
-    // Add background music
-    this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
-    this.backgroundMusic.play();
+    // Level Scene Music
+    this.levelMusic = this.sound.add('levelSceneMusic', { loop: true, volume: 0.5 });
+    this.levelMusic.play();
+    this.levelMusic.volume = 0;
+    this.tweens.add({
+        targets: this.levelMusic,
+        volume: 0.5,
+        duration: 2000
+    });
+
+    // Adicione esta linha:
+    this.gameOverMusic = this.sound.add('gameOverMusic', { volume: 0.7 });
     
     const wallGfx = this.make.graphics({ x: 0, y: 0, add: false });
     wallGfx.fillStyle(0x3a3a3a, 1);
@@ -389,7 +433,9 @@ class LevelScene extends Phaser.Scene {
         if (hazard.hazardType !== 'lava') {
           console.log('Fireboy hit hazard:', hazard.hazardType);
           this.fireboy.isAlive = false;
-          this.backgroundMusic.stop();
+          // Para a música atual e toca a de Game Over
+          this.levelMusic.stop();
+          this.gameOverMusic.play();
           this.scene.start('GameOverScene', { playerDied: 'fireboy' });
         }
       });
@@ -398,7 +444,9 @@ class LevelScene extends Phaser.Scene {
         if (hazard.hazardType !== 'water') {
           console.log('Watergirl hit hazard:', hazard.hazardType);
           this.watergirl.isAlive = false;
-          this.backgroundMusic.stop();
+          // Para a música atual e toca a de Game Over
+          this.levelMusic.stop();
+          this.gameOverMusic.play();
           this.scene.start('GameOverScene', { playerDied: 'watergirl' });
         }
       });
@@ -429,7 +477,7 @@ class LevelScene extends Phaser.Scene {
     
     this.input.keyboard.on('keydown-ESC', () => {
       console.log('ESC pressed, returning to menu');
-      this.backgroundMusic.stop();
+      this.sound.stopAll();
       this.scene.start('MenuScene');
     });
     
@@ -815,6 +863,7 @@ class EditorScene extends Phaser.Scene {
   }
 
   create() {
+    this.sound.stopAll();
     console.log('EditorScene created');
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#2c3e50');
