@@ -8,8 +8,10 @@ class AudioManager {
 
         this.isUnlocked = false;
 
-        this.currentMusic = null;
-        this.currentKey = null;
+        this.music = {}; // pool de músicas
+        this.sfx = {};   // pool de sfx
+
+        this.currentMusicKey = null;
 
         this.musicVolume = this.load('musicVolume', 1);
         this.sfxVolume = this.load('sfxVolume', 1);
@@ -27,26 +29,35 @@ class AudioManager {
     }
 
     // ========================
-    // 🎵 MUSIC (com fade)
+    // 🎵 GET / CREATE MUSIC
+    // ========================
+    getMusic(key) {
+        if (!this.music[key]) {
+            this.music[key] = this.sound.add(key, {
+                loop: true,
+                volume: 0
+            });
+        }
+        return this.music[key];
+    }
+
+    // ========================
+    // 🎵 PLAY MUSIC (com pooling)
     // ========================
     playMusic(scene, key, { fade = 500 } = {}) {
         if (!this.isUnlocked || this.muted) return;
 
-        // evita duplicação
-        if (this.currentKey === key) return;
+        if (this.currentMusicKey === key) return;
 
-        const newMusic = this.sound.add(key, {
-            loop: true,
-            volume: 0
-        });
+        const newMusic = this.getMusic(key);
+        const oldMusic = this.currentMusicKey ? this.music[this.currentMusicKey] : null;
 
-        newMusic.play();
+        this.currentMusicKey = key;
 
-        // 🔥 garante que nunca acumula
-        const oldMusic = this.currentMusic;
-
-        this.currentMusic = newMusic;
-        this.currentKey = key;
+        if (!newMusic.isPlaying) {
+            newMusic.setVolume(0);
+            newMusic.play();
+        }
 
         // fade in nova
         scene.tweens.add({
@@ -55,40 +66,62 @@ class AudioManager {
             duration: fade
         });
 
-        // fade out antiga (se existir)
-        if (oldMusic) {
+        // fade out antiga
+        if (oldMusic && oldMusic !== newMusic) {
             scene.tweens.add({
                 targets: oldMusic,
                 volume: 0,
                 duration: fade,
                 onComplete: () => {
-                    oldMusic.stop();
-                    oldMusic.destroy();
+                    oldMusic.stop(); // ❗ NÃO destruir
                 }
             });
-
-            // 🔴 fallback de segurança (ESSENCIAL)
-            setTimeout(() => {
-                if (oldMusic && oldMusic.isPlaying) {
-                    oldMusic.stop();
-                }
-            }, fade + 50);
         }
     }
 
-    stopAllMusicImmediate() {
-        if (this.currentMusic) {
-            this.currentMusic.stop();
-            this.currentMusic.destroy();
-            this.currentMusic = null;
-            this.currentKey = null;
+    // ========================
+    // 🔊 SFX (pool simples)
+    // ========================
+    playSfx(key, { allowOverlap = true, ...config } = {}) {
+        if (!this.isUnlocked || this.muted) return;
+
+        if (!allowOverlap) {
+            // pooling
+            if (!this.sfx[key]) {
+                this.sfx[key] = this.sound.add(key);
+            }
+
+            const sound = this.sfx[key];
+
+            if (sound.isPlaying) sound.stop();
+
+            sound.play({
+                volume: this.sfxVolume,
+                ...config
+            });
+
+        } else {
+            // instância nova
+            const sound = this.sound.add(key);
+
+            sound.play({
+                volume: this.sfxVolume,
+                ...config
+            });
+
+            sound.once('complete', () => {
+                sound.destroy();
+            });
         }
     }
 
+    // ========================
+    // 🛑 STOP MUSIC
+    // ========================
     stopMusic(scene, { fade = 300 } = {}) {
-        if (!this.currentMusic) return;
+        if (!this.currentMusicKey) return;
 
-        const music = this.currentMusic;
+        const music = this.music[this.currentMusicKey];
 
         scene.tweens.add({
             targets: music,
@@ -96,24 +129,17 @@ class AudioManager {
             duration: fade,
             onComplete: () => {
                 music.stop();
-                music.destroy();
             }
         });
 
-        this.currentMusic = null;
-        this.currentKey = null;
+        this.currentMusicKey = null;
     }
 
-    // ========================
-    // 🔊 SFX
-    // ========================
-    playSfx(key, config = {}) {
-        if (!this.isUnlocked || this.muted) return;
-
-        this.sound.play(key, {
-            volume: this.sfxVolume,
-            ...config
+    stopAllMusicImmediate() {
+        Object.values(this.music).forEach(m => {
+            if (m.isPlaying) m.stop();
         });
+        this.currentMusicKey = null;
     }
 
     // ========================
@@ -123,9 +149,9 @@ class AudioManager {
         this.musicVolume = volume;
         this.save('musicVolume', volume);
 
-        if (this.currentMusic) {
-            this.currentMusic.setVolume(volume);
-        }
+        Object.values(this.music).forEach(m => {
+            m.setVolume(volume);
+        });
     }
 
     setSfxVolume(volume) {
@@ -138,12 +164,12 @@ class AudioManager {
         this.save('muted', muted);
 
         if (muted) {
-            this.stopMusic({ fade: 200 });
+            this.stopAllMusicImmediate();
         }
     }
 
     // ========================
-    // 💾 PERSISTÊNCIA
+    // 💾 STORAGE
     // ========================
     save(key, value) {
         localStorage.setItem(`game_${key}`, JSON.stringify(value));
@@ -204,6 +230,9 @@ class BootScene extends Phaser.Scene {
     this.load.audio('levelSceneMusic', 'assets/level-scene-music.mp3');
     this.load.audio('click', 'assets/click.mp3');
     this.load.audio('death', 'assets/death.mp3');
+    this.load.audio('jump', 'assets/jump.mp3');
+    this.load.audio('jump-fire', 'assets/jump-fire.mp3');
+    this.load.audio('jump-water', 'assets/jump-water.mp3');
   }
 
   create() {
@@ -848,6 +877,7 @@ class LevelScene extends Phaser.Scene {
     
     if (this.fireboy.keys.up.isDown && this.fireboy.body.touching.down) {
       this.fireboy.body.setVelocityY(-400);
+      this.game.audioManager.playSfx('jump-fire');
       this.fireboy.setTexture('fireboy-jump');
       this.fireboy.isJumping = true;
       if (this.fireboy.isMoving) {
@@ -894,6 +924,7 @@ class LevelScene extends Phaser.Scene {
     
     if (this.watergirl.keys.up.isDown && this.watergirl.body.touching.down) {
       this.watergirl.body.setVelocityY(-400);
+      this.game.audioManager.playSfx('jump-water');
       this.watergirl.setTexture('watergirl-jump');
       this.watergirl.isJumping = true;
       if (this.watergirl.isMoving) {
