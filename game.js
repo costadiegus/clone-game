@@ -1,118 +1,336 @@
 // Fireboy & Watergirl Game - Phaser 3 with Sprites
 console.log('Game script loading...');
 
+class AudioManager {
+    constructor(game) {
+        this.game = game;
+        this.sound = game.sound;
+
+        this.isUnlocked = false;
+
+        this.currentMusic = null;
+        this.currentKey = null;
+
+        this.musicVolume = this.load('musicVolume', 1);
+        this.sfxVolume = this.load('sfxVolume', 1);
+        this.muted = this.load('muted', false);
+    }
+
+    // ========================
+    // 🔓 Unlock
+    // ========================
+    async unlock() {
+        if (this.sound.context.state === 'suspended') {
+            await this.sound.context.resume();
+        }
+        this.isUnlocked = true;
+    }
+
+    // ========================
+    // 🎵 MUSIC (com fade)
+    // ========================
+    playMusic(scene, key, { fade = 500 } = {}) {
+        if (!this.isUnlocked || this.muted) return;
+
+        // evita duplicação
+        if (this.currentKey === key) return;
+
+        const newMusic = this.sound.add(key, {
+            loop: true,
+            volume: 0
+        });
+
+        newMusic.play();
+
+        // 🔥 garante que nunca acumula
+        const oldMusic = this.currentMusic;
+
+        this.currentMusic = newMusic;
+        this.currentKey = key;
+
+        // fade in nova
+        scene.tweens.add({
+            targets: newMusic,
+            volume: this.musicVolume,
+            duration: fade
+        });
+
+        // fade out antiga (se existir)
+        if (oldMusic) {
+            scene.tweens.add({
+                targets: oldMusic,
+                volume: 0,
+                duration: fade,
+                onComplete: () => {
+                    oldMusic.stop();
+                    oldMusic.destroy();
+                }
+            });
+
+            // 🔴 fallback de segurança (ESSENCIAL)
+            setTimeout(() => {
+                if (oldMusic && oldMusic.isPlaying) {
+                    oldMusic.stop();
+                }
+            }, fade + 50);
+        }
+    }
+
+    stopAllMusicImmediate() {
+        if (this.currentMusic) {
+            this.currentMusic.stop();
+            this.currentMusic.destroy();
+            this.currentMusic = null;
+            this.currentKey = null;
+        }
+    }
+
+    stopMusic(scene, { fade = 300 } = {}) {
+        if (!this.currentMusic) return;
+
+        const music = this.currentMusic;
+
+        scene.tweens.add({
+            targets: music,
+            volume: 0,
+            duration: fade,
+            onComplete: () => {
+                music.stop();
+                music.destroy();
+            }
+        });
+
+        this.currentMusic = null;
+        this.currentKey = null;
+    }
+
+    // ========================
+    // 🔊 SFX
+    // ========================
+    playSfx(key, config = {}) {
+        if (!this.isUnlocked || this.muted) return;
+
+        this.sound.play(key, {
+            volume: this.sfxVolume,
+            ...config
+        });
+    }
+
+    // ========================
+    // 🎚️ CONTROLES
+    // ========================
+    setMusicVolume(volume) {
+        this.musicVolume = volume;
+        this.save('musicVolume', volume);
+
+        if (this.currentMusic) {
+            this.currentMusic.setVolume(volume);
+        }
+    }
+
+    setSfxVolume(volume) {
+        this.sfxVolume = volume;
+        this.save('sfxVolume', volume);
+    }
+
+    setMuted(muted) {
+        this.muted = muted;
+        this.save('muted', muted);
+
+        if (muted) {
+            this.stopMusic({ fade: 200 });
+        }
+    }
+
+    // ========================
+    // 💾 PERSISTÊNCIA
+    // ========================
+    save(key, value) {
+        localStorage.setItem(`game_${key}`, JSON.stringify(value));
+    }
+
+    load(key, defaultValue) {
+        const value = localStorage.getItem(`game_${key}`);
+        return value ? JSON.parse(value) : defaultValue;
+    }
+}
+
+class BootScene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'BootScene' });
+  }
+
+  preload() {
+    const { width, height } = this.cameras.main;
+
+    // --- Criação Visual da Barra de Carregamento ---
+    const progressBar = this.add.graphics();
+    const progressBox = this.add.graphics();
+    progressBox.fillStyle(0x222222, 0.8);
+    progressBox.fillRect(width / 2 - 160, height / 2 - 25, 320, 50);
+
+    const loadingText = this.add.text(width / 2, height / 2 - 50, 'Carregando...', {
+      font: '20px monospace',
+      fill: '#ffffff'
+    }).setOrigin(0.5);
+
+    // --- Listeners do Loader ---
+    this.load.on('progress', (value) => {
+      progressBar.clear();
+      progressBar.fillStyle(0xffffff, 1);
+      progressBar.fillRect(width / 2 - 150, height / 2 - 15, 300 * value, 30);
+    });
+
+    this.load.on('complete', () => {
+      progressBar.destroy();
+      progressBox.destroy();
+      loadingText.destroy();
+    });
+
+    // --- Carregamento Centralizado de Assets ---
+    // Imagens e Sprites
+    this.load.image('fireboy-idle', 'assets/fireboy.png');
+    this.load.image('watergirl-idle', 'assets/watergirl.png');
+    this.load.image('fireboy-jump', 'assets/fireboy-jump.png');
+    this.load.image('watergirl-jump', 'assets/watergirl-jump.png');
+    this.load.spritesheet('fireboy-walk', 'assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('watergirl-walk', 'assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.image('door-red', 'assets/door-red.png');
+    this.load.image('door-blue', 'assets/door-blue.png');
+
+    // Áudios (Carregar tudo aqui garante que o som estará pronto no Menu)
+    this.load.audio('backgroundMusic', 'assets/background-music.mp3');
+    this.load.audio('gameOverMusic', 'assets/game-over-music.mp3');
+    this.load.audio('levelSceneMusic', 'assets/level-scene-music.mp3');
+    this.load.audio('click', 'assets/click.mp3');
+    this.load.audio('death', 'assets/death.mp3');
+  }
+
+  create() {
+    this.game.audioManager = new AudioManager(this.game);
+    this.scene.start('MenuScene');
+  }
+}
+
 class MenuScene extends Phaser.Scene {
   constructor() {
     super({ key: 'MenuScene' });
   }
 
-  preload() {
-    // Preload assets
-    this.load.image('fireboy-idle', 'assets/fireboy.png');
-    this.load.image('watergirl-idle', 'assets/watergirl.png');
-    this.load.audio('backgroundMusic', 'assets/background-music.mp3');
-  }
-
   create() {
-    this.sound.stopAll();
-    
-    // 1. Preparamos a música, mas não damos play ainda
-    this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
-
-    // 2. Criamos uma "capa" transparente para detectar o primeiro clique
-    const startOverlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7).setDepth(1000);
-    const startText = this.add.text(400, 300, 'CLIQUE PARA COMEÇAR', { 
-        fontSize: '32px', 
-        fill: '#fff' 
-    }).setOrigin(0.5).setDepth(1001);
-
-    // 3. Ao clicar em qualquer lugar da tela pela primeira vez:
-    this.input.once('pointerdown', () => {
-        // Destruímos a capa
-        startOverlay.destroy();
-        startText.destroy();
-
-        // Agora o áudio está desbloqueado pelo navegador!
-        if (!this.backgroundMusic.isPlaying) {
-            this.backgroundMusic.play();
-            this.backgroundMusic.volume = 0;
-            this.tweens.add({
-                targets: this.backgroundMusic,
-                volume: 0.5,
-                duration: 2000
-            });
-        }
-    });
-
     console.log('MenuScene created');
+
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#2c3e50');
-    
+
+    const audio = this.game.audioManager;
+
+    // ========================
+    // 🔓 UNLOCK (apenas se necessário)
+    // ========================
+    if (!audio.isUnlocked) {
+      const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8)
+        .setDepth(1000);
+
+      const text = this.add.text(width / 2, height / 2, 'CLIQUE PARA INICIAR', {
+        fontSize: '32px',
+        fill: '#fff'
+      })
+      .setOrigin(0.5)
+      .setDepth(1001);
+
+      this.input.once('pointerdown', async () => {
+        await audio.unlock();
+        audio.playMusic(this, 'backgroundMusic', { fade: 800 });
+
+        overlay.destroy();
+        text.destroy();
+      });
+
+    } else {
+      // já desbloqueado → toca direto
+      audio.playMusic(this, 'backgroundMusic', { fade: 800 });
+    }
+
+    // ========================
+    // 🧾 TÍTULOS
+    // ========================
     this.add.text(width / 2, 80, 'Fireboy & Watergirl', {
       fontSize: '48px',
       fontStyle: 'bold',
       fill: '#fff',
       align: 'center'
     }).setOrigin(0.5);
-    
+
     this.add.text(width / 2, 140, 'Forest Temple', {
       fontSize: '32px',
       fill: '#ecf0f1',
       align: 'center'
     }).setOrigin(0.5);
-    
-    // Create PLAY button
-    const playButton = this.add.rectangle(width / 2, 250, 200, 60, 0x27ae60);
-    playButton.setInteractive({ useHandCursor: true });
-    
+
+    // ========================
+    // ▶️ PLAY BUTTON
+    // ========================
+    const playButton = this.add.rectangle(width / 2, 250, 200, 60, 0x27ae60)
+      .setInteractive({ useHandCursor: true });
+
     playButton.on('pointerover', () => {
-      console.log('Hover over PLAY');
       playButton.setFillStyle(0x229954);
     });
-    
+
     playButton.on('pointerout', () => {
       playButton.setFillStyle(0x27ae60);
     });
-    
+
     playButton.on('pointerdown', () => {
-      console.log('PLAY button clicked! Starting LevelScene...');
+      audio.playSfx('click');
       this.scene.start('LevelScene');
     });
-    
+
     this.add.text(width / 2, 250, 'PLAY', {
       fontSize: '24px',
       fontStyle: 'bold',
       fill: '#fff'
     }).setOrigin(0.5);
-    
-    // Create EDITOR button
-    const editorButton = this.add.rectangle(width / 2, 340, 200, 60, 0x2980b9);
-    editorButton.setInteractive({ useHandCursor: true });
-    
+
+    // ========================
+    // 🛠️ EDITOR BUTTON
+    // ========================
+    const editorButton = this.add.rectangle(width / 2, 340, 200, 60, 0x2980b9)
+      .setInteractive({ useHandCursor: true });
+
     editorButton.on('pointerover', () => {
       editorButton.setFillStyle(0x1f618d);
     });
-    
+
     editorButton.on('pointerout', () => {
       editorButton.setFillStyle(0x2980b9);
     });
-    
+
     editorButton.on('pointerdown', () => {
-      console.log('EDITOR button clicked!');
+      audio.playSfx('click');
       this.scene.start('EditorScene');
     });
-    
+
     this.add.text(width / 2, 340, 'EDITOR', {
       fontSize: '24px',
       fontStyle: 'bold',
       fill: '#fff'
     }).setOrigin(0.5);
-    
-    this.add.text(width / 2, 480, 'Fireboy (Red) - Arrow Keys | Watergirl (Blue) - A, W, D', {
-      fontSize: '14px',
-      fill: '#bdc3c7',
-      align: 'center'
-    }).setOrigin(0.5);
+
+    // ========================
+    // ℹ️ CONTROLES
+    // ========================
+    this.add.text(
+      width / 2,
+      480,
+      'Fireboy (Red) - Arrow Keys | Watergirl (Blue) - A, W, D',
+      {
+        fontSize: '14px',
+        fill: '#bdc3c7',
+        align: 'center'
+      }
+    ).setOrigin(0.5);
   }
 }
 
@@ -127,21 +345,33 @@ class GameOverScene extends Phaser.Scene {
 
   create() {
     console.log('GameOverScene created - Player died:', this.playerDied);
+
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#1a1a1a');
-    
-    // Game Over title
+
+    const audio = this.game.audioManager;
+
+    // ========================
+    // 🎵 MÚSICA GAME OVER
+    // ========================
+    audio.playMusic(this, 'gameOverMusic', { fade: 600 });
+
+    // ========================
+    // 🧾 TÍTULO
+    // ========================
     this.add.text(width / 2, 80, 'GAME OVER', {
       fontSize: '64px',
       fontStyle: 'bold',
       fill: '#ff6b6b',
       align: 'center'
     }).setOrigin(0.5);
-    
-    // Death message
+
+    // ========================
+    // 💀 MENSAGEM DE MORTE
+    // ========================
     let deathMessage = '';
     let deathColor = '#ff6b6b';
-    
+
     if (this.playerDied === 'fireboy') {
       deathMessage = 'Fireboy fell into a hazard!';
       deathColor = '#ff6b6b';
@@ -149,53 +379,57 @@ class GameOverScene extends Phaser.Scene {
       deathMessage = 'Watergirl fell into a hazard!';
       deathColor = '#4ecdc4';
     }
-    
+
     this.add.text(width / 2, 180, deathMessage, {
       fontSize: '32px',
       fill: deathColor,
       align: 'center'
     }).setOrigin(0.5);
-    
-    // Restart button
-    const restartButton = this.add.rectangle(width / 2 - 120, height / 2 + 80, 180, 60, 0x27ae60);
-    restartButton.setInteractive({ useHandCursor: true });
-    
+
+    // ========================
+    // 🔁 RESTART BUTTON
+    // ========================
+    const restartButton = this.add.rectangle(width / 2 - 120, height / 2 + 80, 180, 60, 0x27ae60)
+      .setInteractive({ useHandCursor: true });
+
     restartButton.on('pointerover', () => {
       restartButton.setFillStyle(0x229954);
     });
-    
+
     restartButton.on('pointerout', () => {
       restartButton.setFillStyle(0x27ae60);
     });
-    
+
     restartButton.on('pointerdown', () => {
-      console.log('Restart button clicked');
+      audio.playSfx('click');
       this.scene.start('LevelScene');
     });
-    
+
     this.add.text(width / 2 - 120, height / 2 + 80, 'RESTART', {
       fontSize: '20px',
       fontStyle: 'bold',
       fill: '#fff'
     }).setOrigin(0.5);
-    
-    // Menu button
-    const menuButton = this.add.rectangle(width / 2 + 120, height / 2 + 80, 180, 60, 0x2980b9);
-    menuButton.setInteractive({ useHandCursor: true });
-    
+
+    // ========================
+    // 🏠 MENU BUTTON
+    // ========================
+    const menuButton = this.add.rectangle(width / 2 + 120, height / 2 + 80, 180, 60, 0x2980b9)
+      .setInteractive({ useHandCursor: true });
+
     menuButton.on('pointerover', () => {
       menuButton.setFillStyle(0x1f618d);
     });
-    
+
     menuButton.on('pointerout', () => {
       menuButton.setFillStyle(0x2980b9);
     });
-    
+
     menuButton.on('pointerdown', () => {
-      console.log('Menu button clicked');
+      audio.playSfx('click');
       this.scene.start('MenuScene');
     });
-    
+
     this.add.text(width / 2 + 120, height / 2 + 80, 'MENU', {
       fontSize: '20px',
       fontStyle: 'bold',
@@ -209,40 +443,12 @@ class LevelScene extends Phaser.Scene {
     super({ key: 'LevelScene' });
   }
 
-  preload() {
-    // Preload sprite assets
-    this.load.image('fireboy-idle', 'assets/fireboy.png');
-    this.load.image('watergirl-idle', 'assets/watergirl.png');
-    this.load.image('fireboy-jump', 'assets/fireboy-jump.png');
-    this.load.image('watergirl-jump', 'assets/watergirl-jump.png');
-    this.load.spritesheet('fireboy-walk', 'assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('watergirl-walk', 'assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.image('door-red', 'assets/door-red.png');
-    this.load.image('door-blue', 'assets/door-blue.png');    
-    this.load.audio('gameOverMusic', 'assets/game-over-music.mp3');
-    this.load.audio('levelSceneMusic', 'assets/level-scene-music.mp3');
-  }
-
   create() {
-    // Para qualquer som que esteja tocando antes de começar o nível
-    this.sound.stopAll();
+    const audio = this.game.audioManager;
 
-    console.log('LevelScene created');
-    this.cameras.main.setBackgroundColor('#1a1a1a');
-    
-    // Level Scene Music
-    this.levelMusic = this.sound.add('levelSceneMusic', { loop: true, volume: 0.5 });
-    this.levelMusic.play();
-    this.levelMusic.volume = 0;
-    this.tweens.add({
-        targets: this.levelMusic,
-        volume: 0.5,
-        duration: 2000
-    });
+    // 🎵 Música da fase (substitui stopAll + add + tween)
+    audio.playMusic(this, 'levelSceneMusic', { fade: 1000 });
 
-    // Adicione esta linha:
-    this.gameOverMusic = this.sound.add('gameOverMusic', { volume: 0.7 });
-    
     const wallGfx = this.make.graphics({ x: 0, y: 0, add: false });
     wallGfx.fillStyle(0x3a3a3a, 1);
     wallGfx.fillRect(0, 0, 80, 80);
@@ -265,7 +471,6 @@ class LevelScene extends Phaser.Scene {
     this.hazards = [];
     this.doors = [];
     
-    // Create particle emitters for effects (used for jumps and hazards) with simple circle textures
     const fireGfx = this.make.graphics({ x: 0, y: 0, add: false });
     fireGfx.fillStyle(0xff6b6b, 1);
     fireGfx.fillCircle(4, 4, 4);
@@ -281,7 +486,6 @@ class LevelScene extends Phaser.Scene {
       gravityY: -300
     });
     
-    // Create water particles for Watergirl's jump and water hazards with simple circle textures
     const waterGfx = this.make.graphics({ x: 0, y: 0, add: false });
     waterGfx.fillStyle(0x4ecdc4, 1);
     waterGfx.fillCircle(4, 4, 4);
@@ -297,7 +501,6 @@ class LevelScene extends Phaser.Scene {
       gravityY: -300
     });
     
-    // Create floor texture for bottom ground
     const stoneGfx = this.make.graphics({ x: 0, y: 0, add: false });
     stoneGfx.fillStyle(0x555555, 1);
     stoneGfx.fillRect(0, 0, 40, 40);
@@ -336,30 +539,24 @@ class LevelScene extends Phaser.Scene {
     toxic.setStrokeStyle(2, 0x1abc9c);
     this.hazards.push(toxic);
     
-    // Create slime effect for toxic hazard
     this.toxicSlime = this.add.graphics();
     this.toxicSlime.x = toxic.x;
     this.toxicSlime.y = toxic.y;
     this.toxicSlime.setDepth(3);
     
-    // Store toxic reference for animation
     this.toxicRect = toxic;
     
-    // Lava
     const lava = this.add.rectangle(150, 525, 100, 1, 0xff4500);
     this.physics.add.existing(lava, true);
     lava.hazardType = 'lava';
     this.hazards.push(lava);
     
-    // Create lava flame effect
     this.lavaFlame = this.add.graphics();
     this.lavaFlame.x = 150;
     this.lavaFlame.y = 525;
     
-    // Store lava reference for animation
     this.lavaRect = lava;
     
-    // Water
     const water = this.add.rectangle(650, 525, 100, 1, 0x0099ff);
     this.physics.add.existing(water, true);
     water.hazardType = 'water';
@@ -370,7 +567,6 @@ class LevelScene extends Phaser.Scene {
     this.waterWave.y = water.y;
     this.waterWave.setDepth(10);
     
-    // Doors
     const fireDoor = this.add.sprite(200, 440, 'door-red').setOrigin(0.5, 1);
     this.physics.add.existing(fireDoor, true);
     fireDoor.doorType = 'fire';
@@ -383,7 +579,6 @@ class LevelScene extends Phaser.Scene {
     this.waterDoor = waterDoor;
     this.doors.push(waterDoor);
     
-    // Create players with sprites
     this.fireboy = this.add.sprite(50, 420, 'fireboy-idle');
     this.fireboy.setScale(1);
     this.physics.add.existing(this.fireboy);
@@ -404,7 +599,6 @@ class LevelScene extends Phaser.Scene {
     this.watergirl.isMoving = false;
     this.watergirl.isJumping = false;
     
-    // Create animations
     if (!this.anims.exists('fireboy-walk-anim')) {
       this.anims.create({
         key: 'fireboy-walk-anim',
@@ -423,36 +617,30 @@ class LevelScene extends Phaser.Scene {
       });
     }
     
-    // Setup collisions with platforms
     this.physics.add.collider(this.fireboy, this.platforms);
     this.physics.add.collider(this.watergirl, this.platforms);
     
-    // Setup hazard collisions
+    // 💀 AJUSTE AQUI (remoção de stop/play direto)
     this.hazards.forEach(hazard => {
       this.physics.add.overlap(this.fireboy, hazard, () => {
         if (hazard.hazardType !== 'lava') {
-          console.log('Fireboy hit hazard:', hazard.hazardType);
           this.fireboy.isAlive = false;
-          // Para a música atual e toca a de Game Over
-          this.levelMusic.stop();
-          this.gameOverMusic.play();
+          audio.playSfx('death');
+          audio.stopAllMusicImmediate();
           this.scene.start('GameOverScene', { playerDied: 'fireboy' });
         }
       });
       
       this.physics.add.overlap(this.watergirl, hazard, () => {
         if (hazard.hazardType !== 'water') {
-          console.log('Watergirl hit hazard:', hazard.hazardType);
           this.watergirl.isAlive = false;
-          // Para a música atual e toca a de Game Over
-          this.levelMusic.stop();
-          this.gameOverMusic.play();
+          audio.playSfx('death');
+          audio.stopAllMusicImmediate();
           this.scene.start('GameOverScene', { playerDied: 'watergirl' });
         }
       });
     });
     
-    // Setup input
     this.fireboy.keys = {
       left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
       right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
@@ -476,8 +664,8 @@ class LevelScene extends Phaser.Scene {
     }).setDepth(95);
     
     this.input.keyboard.on('keydown-ESC', () => {
-      console.log('ESC pressed, returning to menu');
-      this.sound.stopAll();
+      audio.playSfx('click');
+      audio.stopAllMusicImmediate();
       this.scene.start('MenuScene');
     });
     
@@ -898,7 +1086,7 @@ const config = {
       debug: false
     }
   },
-  scene: [MenuScene, LevelScene, GameOverScene, EditorScene],
+  scene: [BootScene, MenuScene, LevelScene, GameOverScene, EditorScene],
   render: {
     pixelArt: true,
     antialias: false
