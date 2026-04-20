@@ -188,11 +188,16 @@ class LevelScene extends Phaser.Scene {
     this.load.spritesheet('watergirl-walk', 'assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
     this.load.image('door-red', 'assets/door-red.png');
     this.load.image('door-blue', 'assets/door-blue.png');
+    this.load.audio('backgroundMusic', 'assets/background-music.mp3');
   }
 
   create() {
     console.log('LevelScene created');
     this.cameras.main.setBackgroundColor('#1a1a1a');
+    
+    // Add background music
+    this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
+    this.backgroundMusic.play();
     
     const wallGfx = this.make.graphics({ x: 0, y: 0, add: false });
     wallGfx.fillStyle(0x3a3a3a, 1);
@@ -384,6 +389,7 @@ class LevelScene extends Phaser.Scene {
         if (hazard.hazardType !== 'lava') {
           console.log('Fireboy hit hazard:', hazard.hazardType);
           this.fireboy.isAlive = false;
+          this.backgroundMusic.stop();
           this.scene.start('GameOverScene', { playerDied: 'fireboy' });
         }
       });
@@ -392,6 +398,7 @@ class LevelScene extends Phaser.Scene {
         if (hazard.hazardType !== 'water') {
           console.log('Watergirl hit hazard:', hazard.hazardType);
           this.watergirl.isAlive = false;
+          this.backgroundMusic.stop();
           this.scene.start('GameOverScene', { playerDied: 'watergirl' });
         }
       });
@@ -422,6 +429,7 @@ class LevelScene extends Phaser.Scene {
     
     this.input.keyboard.on('keydown-ESC', () => {
       console.log('ESC pressed, returning to menu');
+      this.backgroundMusic.stop();
       this.scene.start('MenuScene');
     });
     
