@@ -47,7 +47,27 @@ class AudioManager {
     playMusic(scene, key, { fade = 500 } = {}) {
         if (!this.isUnlocked || this.muted) return;
 
-        if (this.currentMusicKey === key) return;
+        const currentMusic = this.music[this.currentMusicKey];
+
+        if (
+            this.currentMusicKey === key &&
+            currentMusic &&
+            currentMusic.isPlaying
+        ) {
+            return;
+        }
+
+        if (this.currentMusicKey === key && currentMusic && !currentMusic.isPlaying) {
+            currentMusic.play();
+            
+            scene.tweens.add({
+                targets: currentMusic,
+                volume: this.musicVolume,
+                duration: fade
+            });
+
+            return;
+        }
 
         const newMusic = this.getMusic(key);
         const oldMusic = this.currentMusicKey ? this.music[this.currentMusicKey] : null;
@@ -1082,7 +1102,6 @@ class EditorScene extends Phaser.Scene {
   }
 
   create() {
-    this.sound.stopAll();
     console.log('EditorScene created');
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#2c3e50');
