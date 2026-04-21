@@ -5,10 +5,11 @@ export default class AudioManager {
 
         this.isUnlocked = false;
 
-        this.music = {}; // pool de músicas
-        this.sfx = {};   // pool de sfx
+        this.music = {}; // pool
+        this.sfx = {};   // pool
 
         this.currentMusicKey = null;
+        this.lastScene = null;
 
         this.musicVolume = this.load('musicVolume', 1);
         this.sfxVolume = this.load('sfxVolume', 1);
@@ -39,71 +40,63 @@ export default class AudioManager {
     }
 
     // ========================
-    // 🎵 PLAY MUSIC (com pooling)
+    // 🎵 PLAY MUSIC
     // ========================
     playMusic(scene, key, { fade = 500 } = {}) {
-        if (!this.isUnlocked || this.muted) return;
+        this.lastScene = scene;
 
-        const currentMusic = this.music[this.currentMusicKey];
+        if (!this.isUnlocked) return;
 
+        const newMusic = this.getMusic(key);
+        const oldMusic = this.currentMusicKey
+            ? this.music[this.currentMusicKey]
+            : null;
+
+        // já está tocando → não faz nada
         if (
             this.currentMusicKey === key &&
-            currentMusic &&
-            currentMusic.isPlaying
+            newMusic &&
+            newMusic.isPlaying
         ) {
             return;
         }
 
-        if (this.currentMusicKey === key && currentMusic && !currentMusic.isPlaying) {
-            currentMusic.play();
-            
-            scene.tweens.add({
-                targets: currentMusic,
-                volume: this.musicVolume,
-                duration: fade
-            });
-
-            return;
-        }
-
-        const newMusic = this.getMusic(key);
-        const oldMusic = this.currentMusicKey ? this.music[this.currentMusicKey] : null;
-
         this.currentMusicKey = key;
 
+        // garante volume correto ao iniciar
+        newMusic.setVolume(0);
+
         if (!newMusic.isPlaying) {
-            newMusic.setVolume(0);
             newMusic.play();
         }
 
-        // fade in nova
+        // fade in (respeitando mute)
         scene.tweens.add({
             targets: newMusic,
-            volume: this.musicVolume,
+            volume: this.muted ? 0 : this.musicVolume,
             duration: fade
         });
 
-        // fade out antiga
+        // fade out da antiga
         if (oldMusic && oldMusic !== newMusic) {
             scene.tweens.add({
                 targets: oldMusic,
                 volume: 0,
                 duration: fade,
                 onComplete: () => {
-                    oldMusic.stop(); // ❗ NÃO destruir
+                    oldMusic.stop();
                 }
             });
         }
     }
 
     // ========================
-    // 🔊 SFX (pool simples)
+    // 🔊 SFX
     // ========================
     playSfx(key, { allowOverlap = true, ...config } = {}) {
         if (!this.isUnlocked || this.muted) return;
 
         if (!allowOverlap) {
-            // pooling
             if (!this.sfx[key]) {
                 this.sfx[key] = this.sound.add(key);
             }
@@ -118,7 +111,6 @@ export default class AudioManager {
             });
 
         } else {
-            // instância nova
             const sound = this.sound.add(key);
 
             sound.play({
@@ -140,6 +132,8 @@ export default class AudioManager {
 
         const music = this.music[this.currentMusicKey];
 
+        if (!music) return;
+
         scene.tweens.add({
             targets: music,
             volume: 0,
@@ -154,8 +148,9 @@ export default class AudioManager {
 
     stopAllMusicImmediate() {
         Object.values(this.music).forEach(m => {
-            if (m.isPlaying) m.stop();
+            if (m && m.isPlaying) m.stop();
         });
+
         this.currentMusicKey = null;
     }
 
@@ -167,7 +162,9 @@ export default class AudioManager {
         this.save('musicVolume', volume);
 
         Object.values(this.music).forEach(m => {
-            m.setVolume(volume);
+            if (m && m.isPlaying) {
+                m.setVolume(this.muted ? 0 : volume);
+            }
         });
     }
 
@@ -180,9 +177,14 @@ export default class AudioManager {
         this.muted = muted;
         this.save('muted', muted);
 
-        if (muted) {
-            this.stopAllMusicImmediate();
-        }
+        // 🔥 aplica em TODAS as músicas do pool
+        Object.values(this.music).forEach(m => {
+            if (m && m.isPlaying) {
+                m.setVolume(muted ? 0 : this.musicVolume);
+            }
+        });
+
+        this.game.events.emit('audio:muteChanged', muted);
     }
 
     // ========================

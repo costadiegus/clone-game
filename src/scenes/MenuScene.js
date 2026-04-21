@@ -5,12 +5,12 @@ export default class MenuScene extends Phaser.Scene {
 
   create() {
     console.log('MenuScene created');
+    this.scene.bringToTop('UIScene');
 
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#2c3e50');
 
     const audio = this.game.audioManager;
-    
 
     // ========================
     // 🔓 UNLOCK (apenas se necessário)
