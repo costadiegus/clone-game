@@ -32,35 +32,36 @@ export default class PreloadScene extends Phaser.Scene {
       progressBox.destroy();
     });
 
+    const BASE_URL = import.meta.env.BASE_URL;
     // =========================
     // 🖼️ Splash (carregado aqui)
     // =========================
-    this.load.image('splash', './src/assets/splash-screen.png');
+    this.load.image('splash', BASE_URL + 'src/assets/splash-screen.png');
 
     // =========================
     // 🎵 Áudio
     // =========================
-    this.load.audio('intro', './src/assets/intro.mp3');
-    this.load.audio('backgroundMusic', './src/assets/background-music.mp3');
-    this.load.audio('gameOverMusic', './src/assets/game-over-music.mp3');
-    this.load.audio('levelSceneMusic', './src/assets/level-scene-music.mp3');
-    this.load.audio('click', './src/assets/click.mp3');
-    this.load.audio('death', './src/assets/death.mp3');
-    this.load.audio('jump', './src/assets/jump.mp3');
-    this.load.audio('jump-fire', './src/assets/jump-fire.mp3');
-    this.load.audio('jump-water', './src/assets/jump-water.mp3');
+    this.load.audio('intro', BASE_URL + 'src/assets/intro.mp3');
+    this.load.audio('backgroundMusic', BASE_URL + 'src/assets/background-music.mp3');
+    this.load.audio('gameOverMusic', BASE_URL + 'src/assets/game-over-music.mp3');
+    this.load.audio('levelSceneMusic', BASE_URL + 'src/assets/level-scene-music.mp3');
+    this.load.audio('click', BASE_URL + 'src/assets/click.mp3');
+    this.load.audio('death', BASE_URL + 'src/assets/death.mp3');
+    this.load.audio('jump', BASE_URL + 'src/assets/jump.mp3');
+    this.load.audio('jump-fire', BASE_URL + 'src/assets/jump-fire.mp3');
+    this.load.audio('jump-water', BASE_URL + 'src/assets/jump-water.mp3');
 
     // =========================
     // 🎮 Assets do jogo
     // =========================
-    this.load.image('fireboy-idle', './src/assets/fireboy.png');
-    this.load.image('watergirl-idle', './src/assets/watergirl.png');
-    this.load.image('fireboy-jump', './src/assets/fireboy-jump.png');
-    this.load.image('watergirl-jump', './src/assets/watergirl-jump.png');
-    this.load.spritesheet('fireboy-walk', './src/assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('watergirl-walk', './src/assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.image('door-red', './src/assets/door-red.png');
-    this.load.image('door-blue', './src/assets/door-blue.png');
+    this.load.image('fireboy-idle', BASE_URL + 'src/assets/fireboy.png');
+    this.load.image('watergirl-idle', BASE_URL + 'src/assets/watergirl.png');
+    this.load.image('fireboy-jump', BASE_URL + 'src/assets/fireboy-jump.png');
+    this.load.image('watergirl-jump', BASE_URL + 'src/assets/watergirl-jump.png');
+    this.load.spritesheet('fireboy-walk', BASE_URL + 'src/assets/fireboy-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('watergirl-walk', BASE_URL + 'src/assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.image('door-red', BASE_URL + 'src/assets/door-red.png');
+    this.load.image('door-blue', BASE_URL + 'src/assets/door-blue.png');
 
   }
 
