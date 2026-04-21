@@ -62,11 +62,14 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('watergirl-walk', BASE_URL + 'src/assets/watergirl-walk.png', { frameWidth: 64, frameHeight: 64 });
     this.load.image('door-red', BASE_URL + 'src/assets/door-red.png');
     this.load.image('door-blue', BASE_URL + 'src/assets/door-blue.png');
+    this.load.image('mute', BASE_URL + 'src/assets/mute.png');
+    this.load.image('unmute', BASE_URL + 'src/assets/unmute.png');
 
   }
 
   create() {
     // vai direto pra splash
+    this.scene.launch('UIScene');
     this.scene.start('SplashScene');
   }
 }

@@ -7,6 +7,7 @@ import EditorScene from './scenes/EditorScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 import PauseScene from './scenes/PauseScene.js';
 import AudioManager from './game/AudioManager.js';
+import UIScene from './scenes/UIScene.js';
 
 console.log('Game script loading...');
 
@@ -21,7 +22,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [PreloadScene, SplashScene, MenuScene, LevelScene, EditorScene, GameOverScene, PauseScene],
+  scene: [PreloadScene, SplashScene, MenuScene, LevelScene, EditorScene, GameOverScene, PauseScene, UIScene],
   parent: 'game-container',
 };
 

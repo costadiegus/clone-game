@@ -5,7 +5,7 @@ export default class LevelScene extends Phaser.Scene {
 
   create() {
     const audio = this.game.audioManager;
-
+    
     // 🎵 Música da fase (substitui stopAll + add + tween)
     audio.playMusic(this, 'levelSceneMusic', { fade: 1000 });
 
