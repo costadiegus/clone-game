@@ -1,3 +1,6 @@
+import Fireboy from '../entities/Fireboy.js';
+import Watergirl from '../entities/Watergirl.js';
+
 export default class LevelScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LevelScene' });
