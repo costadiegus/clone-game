@@ -1,3 +1,7 @@
+// Import utilities
+import AnimationManager from '../utils/AnimationManager.js';
+import ParticleFactory from '../utils/ParticleFactory.js';
+
 export default class Fireboy {
   /**
    * @param {Phaser.Scene} scene - A cena Phaser que instancia o Fireboy
@@ -7,21 +11,17 @@ export default class Fireboy {
   constructor(scene, x, y) {
     this.scene = scene;
 
-    // Cria partículas de fogo
-    const fireGfx = scene.make.graphics({ x: 0, y: 0, add: false });
-    fireGfx.fillStyle(0xff6b6b, 1);
-    fireGfx.fillCircle(4, 4, 4);
-    fireGfx.generateTexture('fireParticleTex', 8, 8);
-    fireGfx.destroy();
+    // Create fire particles using factory
+    this.particles = ParticleFactory.createFireEmitter(scene, 'fireParticleTex');
 
-    this.particles = scene.add.particles('fireParticleTex');
-    this.particles.createEmitter({
-      speed: { min: -200, max: 200 },
-      angle: { min: 240, max: 300 },
-      scale: { start: 1, end: 0 },
-      lifespan: 600,
-      gravityY: -300
-    });
+    // Ensure fire particle texture exists (create if needed)
+    if (!scene.textures.exists('fireParticleTex')) {
+      const fireGfx = scene.make.graphics({ x: 0, y: 0, add: false });
+      fireGfx.fillStyle(0xff6b6b, 1);
+      fireGfx.fillCircle(4, 4, 4);
+      fireGfx.generateTexture('fireParticleTex', 8, 8);
+      fireGfx.destroy();
+    }
 
     // Cria sprite com física
     this.sprite = scene.add.sprite(x, y, 'fireboy-idle');
@@ -36,15 +36,8 @@ export default class Fireboy {
     this.sprite.isMoving = false;
     this.sprite.isJumping = false;
 
-    // Cria animação de caminhada (apenas uma vez)
-    if (!scene.anims.exists('fireboy-walk-anim')) {
-      scene.anims.create({
-        key: 'fireboy-walk-anim',
-        frames: scene.anims.generateFrameNumbers('fireboy-walk', { start: 0, end: 3 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
+    // Create walk animation using AnimationManager
+    AnimationManager.createFromRange(scene, 'fireboy-walk-anim', 'fireboy-walk', 0, 3, 8, -1);
 
     // Teclas de controle
     this.keys = {

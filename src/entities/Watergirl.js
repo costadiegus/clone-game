@@ -1,3 +1,7 @@
+// Import utilities
+import AnimationManager from '../utils/AnimationManager.js';
+import ParticleFactory from '../utils/ParticleFactory.js';
+
 export default class Watergirl {
   /**
    * @param {Phaser.Scene} scene - A cena Phaser que instancia o Watergirl
@@ -7,21 +11,17 @@ export default class Watergirl {
   constructor(scene, x, y) {
     this.scene = scene;
 
-    // Cria partículas de água
-    const waterGfx = scene.make.graphics({ x: 0, y: 0, add: false });
-    waterGfx.fillStyle(0x4ecdc4, 1);
-    waterGfx.fillCircle(4, 4, 4);
-    waterGfx.generateTexture('waterParticleTex', 8, 8);
-    waterGfx.destroy();
+    // Create water particles using factory
+    this.particles = ParticleFactory.createWaterEmitter(scene, 'waterParticleTex');
 
-    this.particles = scene.add.particles('waterParticleTex');
-    this.particles.createEmitter({
-      speed: { min: -200, max: 200 },
-      angle: { min: 240, max: 300 },
-      scale: { start: 1, end: 0 },
-      lifespan: 600,
-      gravityY: -300
-    });
+    // Ensure water particle texture exists (create if needed)
+    if (!scene.textures.exists('waterParticleTex')) {
+      const waterGfx = scene.make.graphics({ x: 0, y: 0, add: false });
+      waterGfx.fillStyle(0x4ecdc4, 1);
+      waterGfx.fillCircle(4, 4, 4);
+      waterGfx.generateTexture('waterParticleTex', 8, 8);
+      waterGfx.destroy();
+    }
 
     // Cria sprite com física
     this.sprite = scene.add.sprite(x, y, 'watergirl-idle');
@@ -36,15 +36,8 @@ export default class Watergirl {
     this.sprite.isMoving = false;
     this.sprite.isJumping = false;
 
-    // Cria animação de caminhada (apenas uma vez)
-    if (!scene.anims.exists('watergirl-walk-anim')) {
-      scene.anims.create({
-        key: 'watergirl-walk-anim',
-        frames: scene.anims.generateFrameNumbers('watergirl-walk', { start: 0, end: 3 }),
-        frameRate: 8,
-        repeat: -1
-      });
-    }
+    // Create walk animation using AnimationManager
+    AnimationManager.createFromRange(scene, 'watergirl-walk-anim', 'watergirl-walk', 0, 3, 8, -1);
 
     // Teclas de controle
     this.keys = {
