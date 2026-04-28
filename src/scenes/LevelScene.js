@@ -1,3 +1,11 @@
+import Fireboy from '../entities/Fireboy.js';
+import Watergirl from '../entities/Watergirl.js';
+import CollisionSystem from '../systems/CollisionSystem.js';
+import HazardSystem from '../systems/HazardSystem.js';
+import DoorSystem from '../systems/DoorSystem.js';
+import AnimationManager from '../utils/AnimationManager.js';
+import ParticleFactory from '../utils/ParticleFactory.js';
+
 export default class LevelScene extends Phaser.Scene {
   constructor() {
     super({ key: 'LevelScene' });
@@ -30,6 +38,7 @@ export default class LevelScene extends Phaser.Scene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = [];
     this.doors = [];
+    this.hazardEffects = []; // To store hazard visual effects
     
     const fireGfx = this.make.graphics({ x: 0, y: 0, add: false });
     fireGfx.fillStyle(0xff6b6b, 1);
